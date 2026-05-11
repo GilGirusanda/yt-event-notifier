@@ -44,7 +44,22 @@ async def _require_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    chat_id = update.effective_chat.id
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+        await update.message.reply_text(
+            "Welcome to yt-event-notifier!\n\n"
+            "This bot notifies your group about upcoming YouTube live streams.\n\n"
+            "Setup steps:\n"
+            "1. Set your timezone: /settimezone <tz>  (e.g. /settimezone Europe/London)\n"
+            "2. Connect your YouTube channel: /connectyoutube\n"
+            "3. Add a weekly stream slot: /addslot <day> <HH:MM> <title>\n"
+            "4. Configure reminders and more — see /help for all commands."
+        )
+    except Exception:
+        logger.exception("Failed to register group")
+        await update.message.reply_text("Error registering this group. Please try again.")
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
