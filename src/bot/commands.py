@@ -6,7 +6,16 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.db.client import db_context
-from src.db.queries import upsert_group, add_slot, list_slots, update_group, get_group, remove_slot, update_slot, list_active_streams
+from src.db.queries import (
+    upsert_group,
+    add_slot,
+    list_slots,
+    update_group,
+    get_group,
+    remove_slot,
+    update_slot,
+    list_active_streams,
+)
 from src.youtube.auth import create_oauth_flow
 from src.engine import run_polling_cycle
 from dateutil import tz
@@ -45,6 +54,7 @@ async def _require_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     chat_id = update.effective_chat.id
     try:
         async with db_context():
@@ -60,10 +70,13 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
     except Exception:
         logger.exception("Failed to register group")
-        await update.message.reply_text("Error registering this group. Please try again.")
+        await update.message.reply_text(
+            "Error registering this group. Please try again."
+        )
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message
     await update.message.reply_text(
         "Available commands:\n\n"
         "/start — Register the bot and display setup instructions\n"
@@ -87,7 +100,9 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
-async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_connect_youtube(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
@@ -96,8 +111,8 @@ async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE
     chat_id = update.effective_chat.id
     try:
         flow = create_oauth_flow(chat_id)
-        auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
-        
+        auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
+
         await update.message.reply_text(
             f"Please click the link below to authorize this bot to manage your YouTube broadcasts:\n\n{auth_url}"
         )
@@ -106,7 +121,9 @@ async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"Configuration error: {e}")
 
 
-async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_disconnect_youtube(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
@@ -116,13 +133,15 @@ async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_T
     try:
         async with db_context():
             await update_group(
-                chat_id, 
-                yt_access_token=None, 
-                yt_refresh_token=None, 
-                yt_token_expiry=None, 
-                yt_channel_id=None
+                chat_id,
+                yt_access_token=None,
+                yt_refresh_token=None,
+                yt_token_expiry=None,
+                yt_channel_id=None,
             )
-        await update.message.reply_text("✅ Successfully disconnected YouTube account. Your tokens have been deleted.")
+        await update.message.reply_text(
+            "✅ Successfully disconnected YouTube account. Your tokens have been deleted."
+        )
     except Exception as e:
         logger.exception("Failed to disconnect YouTube")
         await update.message.reply_text(f"❌ Error disconnecting: {e}")
@@ -136,16 +155,20 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     args = context.args
     if not args or len(args) != 1:
-        await update.message.reply_text("Usage: /settimezone <Timezone>\nExample: /settimezone Europe/London")
+        await update.message.reply_text(
+            "Usage: /settimezone <Timezone>\nExample: /settimezone Europe/London"
+        )
         return
 
     tz_str = args[0]
-    
+
     try:
         # Validate timezone
         ZoneInfo(tz_str)
     except ZoneInfoNotFoundError:
-        await update.message.reply_text(f"Invalid timezone: '{tz_str}'. Please use standard IANA formats (e.g., Europe/London).")
+        await update.message.reply_text(
+            f"Invalid timezone: '{tz_str}'. Please use standard IANA formats (e.g., Europe/London)."
+        )
         return
 
     chat_id = update.effective_chat.id
@@ -153,7 +176,7 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         async with db_context():
             await upsert_group(chat_id)
             await update_group(chat_id, timezone=tz_str)
-            
+
         logger.info("Set timezone to %s for chat %s", tz_str, chat_id)
         await update.message.reply_text(f"✅ Timezone successfully set to {tz_str}.")
     except Exception as e:
@@ -161,15 +184,19 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text(f"❌ Error setting timezone: {e}")
 
 
-async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_set_autocreate(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
 
     args = context.args
-    if not args or args[0].lower() not in ["on", "off"]:
-        await update.message.reply_text("Usage: /setautocreate <on/off>\nExample: /setautocreate on")
+    if not args or len(args) != 1 or args[0].lower() not in ["on", "off"]:
+        await update.message.reply_text(
+            "Usage: /setautocreate <on/off>\nExample: /setautocreate on"
+        )
         return
 
     is_enabled = args[0].lower() == "on"
@@ -179,7 +206,7 @@ async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE)
         async with db_context():
             await upsert_group(chat_id)
             await update_group(chat_id, auto_create=is_enabled)
-        
+
         status = "Enabled ✅" if is_enabled else "Disabled ❌"
         await update.message.reply_text(f"Auto-create streams is now {status}.")
     except Exception as e:
@@ -188,19 +215,24 @@ async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def cmd_set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
 
     args = context.args
     if not args or len(args) != 1:
-        await update.message.reply_text("Usage: /setreminder <hours>\nExample: /setreminder 1")
+        await update.message.reply_text(
+            "Usage: /setreminder <hours>\nExample: /setreminder 1"
+        )
         return
 
     try:
         hours = float(args[0])
     except (ValueError, TypeError):
-        await update.message.reply_text("Usage: /setreminder <hours>\nExample: /setreminder 1")
+        await update.message.reply_text(
+            "Usage: /setreminder <hours>\nExample: /setreminder 1"
+        )
         return
 
     if hours <= 0:
@@ -214,26 +246,35 @@ async def cmd_set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await update_group(chat_id, reminder_hours=hours)
 
         logger.info("Set reminder_hours to %s for chat %s", hours, chat_id)
-        await update.message.reply_text(f"Reminder set to {hours:g} hour(s) before stream start.")
+        await update.message.reply_text(
+            f"Reminder set to {hours:g} hour(s) before stream start."
+        )
     except Exception:
         logger.exception("Failed to set reminder_hours")
         await update.message.reply_text("Error setting reminder. Please try again.")
 
 
-async def cmd_set_check_window(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_set_check_window(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
 
     args = context.args
     if not args or len(args) != 1:
-        await update.message.reply_text("Usage: /setcheckwindow <hours>\nExample: /setcheckwindow 24")
+        await update.message.reply_text(
+            "Usage: /setcheckwindow <hours>\nExample: /setcheckwindow 24"
+        )
         return
 
     try:
         hours = float(args[0])
     except (ValueError, TypeError):
-        await update.message.reply_text("Usage: /setcheckwindow <hours>\nExample: /setcheckwindow 24")
+        await update.message.reply_text(
+            "Usage: /setcheckwindow <hours>\nExample: /setcheckwindow 24"
+        )
         return
 
     if hours <= 0:
@@ -247,7 +288,9 @@ async def cmd_set_check_window(update: Update, context: ContextTypes.DEFAULT_TYP
             await update_group(chat_id, check_window_hours=hours)
 
         logger.info("Set check_window_hours to %s for chat %s", hours, chat_id)
-        await update.message.reply_text(f"Check window set to {hours:g} hour(s) before slot time.")
+        await update.message.reply_text(
+            f"Check window set to {hours:g} hour(s) before slot time."
+        )
     except Exception:
         logger.exception("Failed to set check_window_hours")
         await update.message.reply_text("Error setting check window. Please try again.")
@@ -261,19 +304,31 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     args = context.args
     if not args or len(args) < 3:
-        await update.message.reply_text("Usage: /addslot <day> <HH:MM> <Title...>\nExample: /addslot monday 20:00 Weekly Stream")
+        await update.message.reply_text(
+            "Usage: /addslot <day> <HH:MM> <Title...>\nExample: /addslot monday 20:00 Weekly Stream"
+        )
         return
 
     day_str = args[0]
     time_str = args[1]
     title_template = " ".join(args[2:])
-    days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    
+    days = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+
     day_str_lower = day_str.lower()
     if day_str_lower not in days:
-        await update.message.reply_text(f"Invalid day '{day_str}'. Must be one of: {', '.join(days)}")
+        await update.message.reply_text(
+            f"Invalid day '{day_str}'. Must be one of: {', '.join(days)}"
+        )
         return
-        
+
     day_of_week = days.index(day_str_lower)
 
     try:
@@ -281,7 +336,9 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         dt = datetime.strptime(time_str, "%H:%M")
         formatted_time = dt.strftime("%H:%M")
     except ValueError:
-        await update.message.reply_text("Invalid time format. Please use HH:MM (e.g., 20:00).")
+        await update.message.reply_text(
+            "Invalid time format. Please use HH:MM (e.g., 20:00)."
+        )
         return
 
     chat_id = update.effective_chat.id
@@ -291,12 +348,12 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             # Ensure the group is registered before adding a slot
             await upsert_group(chat_id)
             slot_id = await add_slot(
-                group_id=chat_id, 
-                day_of_week=day_of_week, 
-                local_time=formatted_time, 
-                title_template=title_template
+                group_id=chat_id,
+                day_of_week=day_of_week,
+                local_time=formatted_time,
+                title_template=title_template,
             )
-            
+
         logger.info("Added slot %s for chat %s", slot_id, chat_id)
         await update.message.reply_text(
             f"Slot {slot_id} added successfully for {day_str.capitalize()} at {formatted_time} with title: '{title_template}'."
@@ -314,11 +371,16 @@ async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     args = context.args
     if not args or len(args) != 1 or not args[0].isdigit():
-        await update.message.reply_text("Usage: /removeslot <slot_id>\nUse /listslots to find the ID.")
+        await update.message.reply_text(
+            "Usage: /removeslot <slot_id>\nUse /listslots to find the ID."
+        )
         return
 
     slot_id = int(args[0])
-    
+    if slot_id <= 0:
+        await update.message.reply_text("Slot ID must be a positive integer.")
+        return
+
     try:
         async with db_context():
             await remove_slot(slot_id, update.effective_chat.id)
@@ -329,6 +391,7 @@ async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -362,13 +425,16 @@ async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await update_slot(slot_id, title_template=template)
 
         logger.info("Set title_template for slot %s in chat %s", slot_id, chat_id)
-        await update.message.reply_text(f"Template for slot {slot_id} updated to: '{template}'.")
+        await update.message.reply_text(
+            f"Template for slot {slot_id} updated to: '{template}'."
+        )
     except Exception:
         logger.exception("Failed to set title_template")
         await update.message.reply_text("Error setting template. Please try again.")
 
 
 async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -402,7 +468,9 @@ async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update_slot(slot_id, custom_message=message)
 
         logger.info("Set custom_message for slot %s in chat %s", slot_id, chat_id)
-        await update.message.reply_text(f"Message for slot {slot_id} updated to: '{message}'.")
+        await update.message.reply_text(
+            f"Message for slot {slot_id} updated to: '{message}'."
+        )
     except Exception:
         logger.exception("Failed to set custom_message")
         await update.message.reply_text("Error setting message. Please try again.")
@@ -415,17 +483,27 @@ async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     chat_id = update.effective_chat.id
-    
+
     try:
         async with db_context():
             slots = await list_slots(chat_id)
-            
+
         if not slots:
-            await update.message.reply_text("No slots configured for this group. Use /addslot to add one.")
+            await update.message.reply_text(
+                "No slots configured for this group. Use /addslot to add one."
+            )
             return
 
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        
+        days = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
+
         lines = ["📅 *Configured Slots:*"]
         for slot in slots:
             slot_id = slot["slot_id"]
@@ -433,9 +511,9 @@ async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             time = slot["local_time"]
             title = slot["title_template"]
             lines.append(f"• ID: `{slot_id}` | {day} @ {time} | Title: '{title}'")
-            
+
         await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
-        
+
     except Exception as e:
         logger.exception("Failed to list slots")
         await update.message.reply_text(f"Error fetching slots: {e}")
@@ -443,28 +521,34 @@ async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message and update.effective_chat
-    if not await _require_admin(update, context):
-        await update.message.reply_text("Admin privileges required.")
-        return
 
     chat_id = update.effective_chat.id
     try:
         async with db_context():
+            group = await get_group(chat_id)
             streams = await list_active_streams(chat_id)
-            
-        if not streams:
-            await update.message.reply_text("No active streams being tracked. Wait for /check to run or trigger it manually.")
-            return
-            
-        lines = ["📡 *Tracked Streams*"]
-        for stream in streams:
-            sched_dt = datetime.fromtimestamp(stream["scheduled_start"], tz=tz.UTC).strftime("%Y-%m-%d %H:%M UTC")
-            lines.append(f"• Scheduled: `{sched_dt}` | URL: {stream['yt_url']}")
-            
-        await update.message.reply_text("\n".join(lines), parse_mode="Markdown", disable_web_page_preview=True)
     except Exception as e:
         logger.exception("Failed to list streams")
         await update.message.reply_text(f"Error fetching streams: {e}")
+        return
+
+    if not streams:
+        await update.message.reply_text("No upcoming streams to display.")
+        return
+
+    group_tz = ZoneInfo(group["timezone"]) if group and group.get("timezone") else ZoneInfo("UTC")
+
+    lines = ["📡 *Tracked Streams*"]
+    for stream in streams:
+        sched_dt = datetime.fromtimestamp(
+            stream["scheduled_start"], tz=group_tz
+        ).strftime("%Y-%m-%d %H:%M %Z")
+        status = stream.get("status", "scheduled")
+        lines.append(f"• [{status}] Scheduled: `{sched_dt}` | URL: {stream['yt_url']}")
+
+    await update.message.reply_text(
+        "\n".join(lines), parse_mode="Markdown", disable_web_page_preview=True
+    )
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -484,11 +568,13 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     if not group:
-        await update.message.reply_text("This group is not registered. Run /start to register.")
+        await update.message.reply_text(
+            "This group is not registered. Run /start to register."
+        )
         return
 
-    timezone = group["timezone"]
-    auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
+    timezone = group.get("timezone", "N/A")
+    auto_create = "Enabled ✅" if group.get("auto_create") else "Disabled ❌"
     yt_status = (
         f"Connected (channel: {group['yt_channel_id']}) 🟢"
         if group["yt_channel_id"]
@@ -498,15 +584,14 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     minutes_until_poll = 15 - (now.minute % 15)
 
     lines = [
-        "⚙️ *Bot Configuration Status*",
+        "⚙️ *Bot Status: OK*",
         f"• *Timezone*: `{timezone}`",
         f"• *Auto-Create Streams*: {auto_create}",
         f"• *YouTube Connection*: {yt_status}",
         f"• *Next scheduled poll*: in ~{minutes_until_poll} minute(s)",
         "",
-        "To manage slots, use `/listslots`."
+        "To manage slots, use `/listslots`.",
     ]
-
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 
@@ -523,7 +608,11 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         async with db_context():
             await upsert_group(chat_id)
             group = await get_group(chat_id)
-            last_check = group["last_manual_check"] if group and group["last_manual_check"] else 0
+            last_check = (
+                group["last_manual_check"]
+                if group and group["last_manual_check"]
+                else 0
+            )
             if now - last_check < 300:
                 remaining = 300 - (now - last_check)
                 await update.message.reply_text(
@@ -536,10 +625,15 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Error triggering poll. Please try again.")
         return
 
-    await update.message.reply_text("Poll triggered. Checking for upcoming streams now.")
+    await update.message.reply_text(
+        "Poll triggered. Checking for upcoming streams now."
+    )
 
 
-async def cmd_setbroadcastprivacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_setbroadcastprivacy(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -565,4 +659,6 @@ async def cmd_setbroadcastprivacy(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(f"Broadcast privacy set to {value}.")
     except Exception:
         logger.exception("Failed to set broadcast_privacy")
-        await update.message.reply_text("Error setting broadcast privacy. Please try again.")
+        await update.message.reply_text(
+            "Error setting broadcast privacy. Please try again."
+        )

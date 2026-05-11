@@ -37,7 +37,7 @@ async def test_remove_slot_success():
     ):
         await cmd_remove_slot(update, context)
 
-    mock_remove.assert_awaited_once_with(42)
+    mock_remove.assert_awaited_once_with(42, 123456)
     reply_text = update.message.reply_text.call_args[0][0].lower()
     assert "slot" in reply_text and "42" in reply_text
 
@@ -191,7 +191,7 @@ async def test_remove_slot_db_error():
 
     reply_text = update.message.reply_text.call_args[0][0].lower()
     assert "error" in reply_text or "fail" in reply_text
-    mock_remove.assert_awaited_once_with(1)
+    mock_remove.assert_awaited_once_with(1, 123456)
 
 
 @pytest.mark.asyncio
@@ -206,7 +206,7 @@ async def test_remove_slot_minimum_valid_id():
     ):
         await cmd_remove_slot(update, context)
 
-    mock_remove.assert_awaited_once_with(1)
+    mock_remove.assert_awaited_once_with(1, 123456)
     reply_text = update.message.reply_text.call_args[0][0].lower()
     assert "slot" in reply_text and "removed" in reply_text
 
@@ -223,6 +223,6 @@ async def test_remove_slot_large_id():
     ):
         await cmd_remove_slot(update, context)
 
-    mock_remove.assert_awaited_once_with(999999)
+    mock_remove.assert_awaited_once_with(999999, 123456)
     reply_text = update.message.reply_text.call_args[0][0].lower()
     assert "slot" in reply_text and "removed" in reply_text
