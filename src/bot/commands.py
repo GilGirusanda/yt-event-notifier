@@ -63,7 +63,27 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    await update.message.reply_text(
+        "Available commands:\n\n"
+        "/start — Register the bot and display setup instructions\n"
+        "/help — Display all available commands\n"
+        "/connectyoutube — Link a YouTube channel to this group (admin)\n"
+        "/disconnectyoutube — Remove the YouTube channel connection (admin)\n"
+        "/settimezone <tz> — Set the group's timezone, e.g. Europe/London (admin)\n"
+        "/setautocreate <on|off> — Toggle automatic YouTube stream creation (admin)\n"
+        "/setreminder <hours> — Set the reminder window before stream start (admin)\n"
+        "/setcheckwindow <hours> — Set how many hours before a slot to check/create the stream (admin)\n"
+        "/addslot <day> <HH:MM> [title_template] — Add a weekly recurring slot (admin)\n"
+        "/removeslot <slot_id> — Remove a scheduled slot by ID (admin)\n"
+        "/settemplate <slot_id> <template> — Set the stream title template for a slot (admin)\n"
+        "/setmessage <slot_id> <message> — Set the custom notification message for a slot (admin)\n"
+        "/listslots — List all configured slots (admin)\n"
+        "/streams — List upcoming tracked streams\n"
+        "/status — Show bot health and YouTube connection status (admin)\n"
+        "/check — Trigger an immediate poll (admin)\n"
+        "/setbroadcastprivacy <public|unlisted|private> — Set auto-created broadcast privacy (admin)\n"
+        "/setbroadcastdescription <text> — Set auto-created broadcast description (admin)"
+    )
 
 
 async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
