@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS groups (
     yt_access_token     TEXT,
     yt_refresh_token    TEXT,
     yt_token_expiry     INTEGER,
-    last_manual_check   INTEGER
+    last_manual_check   INTEGER,
+    broadcast_privacy   TEXT    NOT NULL DEFAULT 'public'
 )
 """
 

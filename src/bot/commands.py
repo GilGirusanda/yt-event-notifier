@@ -32,6 +32,7 @@ def build_application(token: str) -> Application:
     app.add_handler(CommandHandler("streams", cmd_streams))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("check", cmd_check))
+    app.add_handler(CommandHandler("setbroadcastprivacy", cmd_setbroadcastprivacy))
     return app
 
 
@@ -443,3 +444,32 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.exception("Manual check failed")
         await update.message.reply_text(f"❌ Error during sync: {e}")
+
+
+async def cmd_setbroadcastprivacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    valid_values = ("public", "unlisted", "private")
+    args = context.args
+    if not args or len(args) != 1 or args[0].lower() not in valid_values:
+        await update.message.reply_text(
+            "Usage: /setbroadcastprivacy <public|unlisted|private>\n"
+            "Example: /setbroadcastprivacy public"
+        )
+        return
+
+    value = args[0].lower()
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, broadcast_privacy=value)
+
+        logger.info("Set broadcast_privacy to %s for chat %s", value, chat_id)
+        await update.message.reply_text(f"Broadcast privacy set to {value}.")
+    except Exception:
+        logger.exception("Failed to set broadcast_privacy")
+        await update.message.reply_text("Error setting broadcast privacy. Please try again.")
