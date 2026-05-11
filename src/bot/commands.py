@@ -187,7 +187,36 @@ async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def cmd_set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or len(args) != 1:
+        await update.message.reply_text("Usage: /setreminder <hours>\nExample: /setreminder 1")
+        return
+
+    try:
+        hours = float(args[0])
+    except (ValueError, TypeError):
+        await update.message.reply_text("Usage: /setreminder <hours>\nExample: /setreminder 1")
+        return
+
+    if hours <= 0:
+        await update.message.reply_text("Reminder hours must be greater than 0.")
+        return
+
+    chat_id = update.effective_chat.id
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, reminder_hours=hours)
+
+        logger.info("Set reminder_hours to %s for chat %s", hours, chat_id)
+        await update.message.reply_text(f"Reminder set to {hours:g} hour(s) before stream start.")
+    except Exception:
+        logger.exception("Failed to set reminder_hours")
+        await update.message.reply_text("Error setting reminder. Please try again.")
 
 
 async def cmd_set_check_window(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
