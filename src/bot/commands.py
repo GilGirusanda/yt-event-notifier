@@ -474,50 +474,44 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     chat_id = update.effective_chat.id
-    
+
     try:
         async with db_context():
             group = await get_group(chat_id)
-            
-        if not group:
-            await update.message.reply_text("Group is not registered. Use /settimezone or /addslot to start configuring.")
-            return
+    except Exception:
+        logger.exception("Failed to fetch group status")
+        await update.message.reply_text("Error fetching status. Please try again.")
+        return
 
-        timezone = group["timezone"]
-        auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
-        yt_status = "Connected 🟢" if group["yt_access_token"] else "Disconnected 🔴"
+    if not group:
+        await update.message.reply_text("This group is not registered. Run /start to register.")
+        return
 
-        lines = [
-            "⚙️ *Bot Configuration Status*",
-            f"• *Timezone*: `{timezone}`",
-            f"• *Auto-Create Streams*: {auto_create}",
-            f"• *YouTube Connection*: {yt_status}",
-            "",
-            "To manage slots, use `/listslots`."
-        ]
-        
-        await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
-        
-    except Exception as e:
-        logger.exception("Failed to get status")
-        await update.message.reply_text(f"Error fetching status: {e}")
+    timezone = group["timezone"]
+    auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
+    yt_status = (
+        f"Connected (channel: {group['yt_channel_id']}) 🟢"
+        if group["yt_channel_id"]
+        else "Not connected 🔴"
+    )
+    now = datetime.now()
+    minutes_until_poll = 15 - (now.minute % 15)
+
+    lines = [
+        "⚙️ *Bot Configuration Status*",
+        f"• *Timezone*: `{timezone}`",
+        f"• *Auto-Create Streams*: {auto_create}",
+        f"• *YouTube Connection*: {yt_status}",
+        f"• *Next scheduled poll*: in ~{minutes_until_poll} minute(s)",
+        "",
+        "To manage slots, use `/listslots`."
+    ]
+
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 
 async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-<<<<<<< HEAD
     assert update.message and update.effective_chat
-    if not await _require_admin(update, context):
-        await update.message.reply_text("Admin privileges required.")
-        return
-        
-    await update.message.reply_text("🔄 Running manual sync with YouTube...")
-    try:
-        await run_polling_cycle(context.bot)
-        await update.message.reply_text("✅ Sync complete! Use /streams to see tracked broadcasts.")
-    except Exception as e:
-        logger.exception("Manual check failed")
-        await update.message.reply_text(f"❌ Error during sync: {e}")
-=======
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -543,7 +537,6 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     await update.message.reply_text("Poll triggered. Checking for upcoming streams now.")
->>>>>>> 741cb11 (feat: implement /check command)
 
 
 async def cmd_setbroadcastprivacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
