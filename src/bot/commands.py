@@ -369,7 +369,43 @@ async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or len(args) < 2:
+        await update.message.reply_text(
+            "Usage: /setmessage <slot_id> <message>\n"
+            "Example: /setmessage 1 Join us for the weekly stream!"
+        )
+        return
+
+    try:
+        slot_id = int(args[0])
+    except (ValueError, TypeError):
+        await update.message.reply_text(
+            "Usage: /setmessage <slot_id> <message>\n"
+            "Example: /setmessage 1 Join us for the weekly stream!"
+        )
+        return
+
+    if slot_id <= 0:
+        await update.message.reply_text("Slot ID must be a positive integer.")
+        return
+
+    message = " ".join(args[1:])
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await update_slot(slot_id, custom_message=message)
+
+        logger.info("Set custom_message for slot %s in chat %s", slot_id, chat_id)
+        await update.message.reply_text(f"Message for slot {slot_id} updated to: '{message}'.")
+    except Exception:
+        logger.exception("Failed to set custom_message")
+        await update.message.reply_text("Error setting message. Please try again.")
 
 
 async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
