@@ -29,7 +29,7 @@ class _S3RotatingHandler(TimedRotatingFileHandler):
             logging.getLogger(__name__).exception("Failed to upload rotated log to S3")
 
 
-def setup_logging(level: int = logging.INFO) -> None:
+def setup_logging(level: int = logging.INFO, profile: str = "prod") -> None:
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
 
     root = logging.getLogger()
@@ -41,10 +41,24 @@ def setup_logging(level: int = logging.INFO) -> None:
     stream.setFormatter(fmt)
     root.addHandler(stream)
 
+    log_file = os.getenv("LOG_FILE", "logs/app.log")
+
+    if profile == "dev":
+        # Local logging only, no AWS interaction
+        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+        file_handler = TimedRotatingFileHandler(
+            filename=log_file,
+            when="midnight",
+            backupCount=7,
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(fmt)
+        root.addHandler(file_handler)
+        return
+
     # File + S3 rotation only makes sense outside Lambda (container is ephemeral there).
     bucket = os.getenv("LOG_BUCKET")
     if bucket and not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
-        log_file = os.getenv("LOG_FILE", "logs/app.log")
         file_handler = _S3RotatingHandler(
             filename=log_file,
             bucket=bucket,

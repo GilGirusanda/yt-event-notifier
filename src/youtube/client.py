@@ -9,12 +9,36 @@ logger = logging.getLogger(__name__)
 
 class YouTubeClient:
     def __init__(self, credentials: Credentials) -> None:
-        self._service = build("youtube", "v3", credentials=credentials)
+        # We MUST type this as `Any`. `googleapiclient` creates methods like
+        # `liveBroadcasts()` dynamically at runtime based on Google's JSON discovery docs.
+        # The base `Resource` class does NOT actually contain these methods, so 
+        # statically typing it as `Resource` guarantees a type-checker error.
+        self._service: Any = build("youtube", "v3", credentials=credentials)
 
-    def find_broadcast(self, scheduled_start_iso: str) -> dict[str, Any] | None:
+    def find_broadcast(
+        self, scheduled_start_iso: str, broadcastStatus: str = "all"
+    ) -> dict[str, Any] | None:
+        """
+        Find broadcast by scheduled start time.
+
+        Args:
+            scheduled_start_iso: Scheduled start time in ISO 8601 format.
+            broadcastStatus: Status of the broadcast. Can be 'all', 'active', 'upcoming', 
+                'live', 'completed', 'none'. Defaults to 'all'.
+
+        Returns:
+            dict[str, Any] | None: Dictionary containing broadcast information if found, 
+                None otherwise.
+        """
         response = (
             self._service.liveBroadcasts()
-            .list(part="id,snippet,status", broadcastType="all", mine=True, maxResults=50)
+            .list(
+                part="id,snippet,status",
+                broadcastType="all",
+                mine=True,
+                maxResults=50,
+                broadcastStatus=broadcastStatus,
+            )
             .execute()
         )
         for item in response.get("items", []):

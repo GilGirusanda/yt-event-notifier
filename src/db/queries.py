@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Iterable
 
 import aiosqlite
 
@@ -17,7 +17,7 @@ async def get_group(group_id: int) -> aiosqlite.Row | None:
         return await cur.fetchone()
 
 
-async def list_groups() -> list[aiosqlite.Row]:
+async def list_groups() -> Iterable[aiosqlite.Row]:
     conn = get_connection()
     async with conn.execute("SELECT * FROM groups") as cur:
         return await cur.fetchall()
@@ -40,6 +40,8 @@ async def add_slot(group_id: int, day_of_week: int, local_time: str) -> int:
         (group_id, day_of_week, local_time),
     )
     await conn.commit()
+    if cursor.lastrowid is None:
+        raise RuntimeError("Failed to get lastrowid after slot insert")
     return cursor.lastrowid
 
 
@@ -49,7 +51,7 @@ async def get_slot(slot_id: int) -> aiosqlite.Row | None:
         return await cur.fetchone()
 
 
-async def list_slots(group_id: int) -> list[aiosqlite.Row]:
+async def list_slots(group_id: int) -> Iterable[aiosqlite.Row]:
     conn = get_connection()
     async with conn.execute("SELECT * FROM slots WHERE group_id = ?", (group_id,)) as cur:
         return await cur.fetchall()
@@ -88,7 +90,7 @@ async def upsert_stream(
     await conn.commit()
 
 
-async def list_active_streams(group_id: int) -> list[aiosqlite.Row]:
+async def list_active_streams(group_id: int) -> Iterable[aiosqlite.Row]:
     conn = get_connection()
     async with conn.execute(
         "SELECT * FROM streams WHERE group_id = ? AND status != 'ended'", (group_id,)
