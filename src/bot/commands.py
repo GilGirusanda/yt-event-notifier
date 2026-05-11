@@ -6,7 +6,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.db.client import db_context
-from src.db.queries import upsert_group, add_slot, list_slots, update_group
+from src.db.queries import upsert_group, add_slot, list_slots, update_group, get_group, remove_slot, list_active_streams
+from src.youtube.auth import create_oauth_flow
+from src.engine import run_polling_cycle
+from dateutil import tz
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +51,42 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    try:
+        flow = create_oauth_flow(state=str(chat_id))
+        auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
+        
+        await update.message.reply_text(
+            f"Please click the link below to authorize this bot to manage your YouTube broadcasts:\n\n{auth_url}"
+        )
+    except Exception as e:
+        logger.exception("Failed to create OAuth flow")
+        await update.message.reply_text(f"Configuration error: {e}")
 
 
 async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    try:
+        async with db_context():
+            await update_group(
+                chat_id, 
+                yt_access_token=None, 
+                yt_refresh_token=None, 
+                yt_token_expiry=None, 
+                yt_channel_id=None
+            )
+        await update.message.reply_text("✅ Successfully disconnected YouTube account. Your tokens have been deleted.")
+    except Exception as e:
+        logger.exception("Failed to disconnect YouTube")
+        await update.message.reply_text(f"❌ Error disconnecting: {e}")
 
 
 async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -88,7 +122,28 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or args[0].lower() not in ["on", "off"]:
+        await update.message.reply_text("Usage: /setautocreate <on/off>\nExample: /setautocreate on")
+        return
+
+    is_enabled = args[0].lower() == "on"
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, auto_create=is_enabled)
+        
+        status = "Enabled ✅" if is_enabled else "Disabled ❌"
+        await update.message.reply_text(f"Auto-create streams is now {status}.")
+    except Exception as e:
+        logger.exception("Failed to toggle auto_create")
+        await update.message.reply_text(f"Error updating setting: {e}")
 
 
 async def cmd_set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -152,7 +207,24 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or len(args) != 1 or not args[0].isdigit():
+        await update.message.reply_text("Usage: /removeslot <slot_id>\nUse /listslots to find the ID.")
+        return
+
+    slot_id = int(args[0])
+    
+    try:
+        async with db_context():
+            await remove_slot(slot_id)
+        await update.message.reply_text(f"✅ Slot {slot_id} removed successfully.")
+    except Exception as e:
+        logger.exception("Failed to remove slot")
+        await update.message.reply_text(f"❌ Error removing slot: {e}")
 
 
 async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -196,12 +268,74 @@ async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    try:
+        async with db_context():
+            streams = await list_active_streams(chat_id)
+            
+        if not streams:
+            await update.message.reply_text("No active streams being tracked. Wait for /check to run or trigger it manually.")
+            return
+            
+        lines = ["📡 *Tracked Streams*"]
+        for stream in streams:
+            sched_dt = datetime.fromtimestamp(stream["scheduled_start"], tz=tz.UTC).strftime("%Y-%m-%d %H:%M UTC")
+            lines.append(f"• Scheduled: `{sched_dt}` | URL: {stream['yt_url']}")
+            
+        await update.message.reply_text("\n".join(lines), parse_mode="Markdown", disable_web_page_preview=True)
+    except Exception as e:
+        logger.exception("Failed to list streams")
+        await update.message.reply_text(f"Error fetching streams: {e}")
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    
+    try:
+        async with db_context():
+            group = await get_group(chat_id)
+            
+        if not group:
+            await update.message.reply_text("Group is not registered. Use /settimezone or /addslot to start configuring.")
+            return
+
+        timezone = group["timezone"]
+        auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
+        yt_status = "Connected 🟢" if group["yt_access_token"] else "Disconnected 🔴"
+
+        lines = [
+            "⚙️ *Bot Configuration Status*",
+            f"• *Timezone*: `{timezone}`",
+            f"• *Auto-Create Streams*: {auto_create}",
+            f"• *YouTube Connection*: {yt_status}",
+            "",
+            "To manage slots, use `/listslots`."
+        ]
+        
+        await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+        
+    except Exception as e:
+        logger.exception("Failed to get status")
+        await update.message.reply_text(f"Error fetching status: {e}")
 
 
 async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+        
+    await update.message.reply_text("🔄 Running manual sync with YouTube...")
+    try:
+        await run_polling_cycle(context.bot)
+        await update.message.reply_text("✅ Sync complete! Use /streams to see tracked broadcasts.")
+    except Exception as e:
+        logger.exception("Manual check failed")
+        await update.message.reply_text(f"❌ Error during sync: {e}")
