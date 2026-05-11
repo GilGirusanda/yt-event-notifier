@@ -24,7 +24,8 @@ def _s3_coords() -> tuple[str, str]:
 
 async def _download_db() -> str:
     bucket, key = _s3_coords()
-    path = tempfile.mktemp(suffix=".db")
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
     if bucket:
         try:
             _s3().download_file(bucket, key, path)
