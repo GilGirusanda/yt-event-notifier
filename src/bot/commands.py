@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.db.client import db_context
-from src.db.queries import upsert_group, add_slot, list_slots, update_group, get_group, remove_slot, list_active_streams
+from src.db.queries import upsert_group, add_slot, list_slots, update_group, get_group, remove_slot, update_slot, list_active_streams
 from src.youtube.auth import create_oauth_flow
 from src.engine import run_polling_cycle
 from dateutil import tz
@@ -329,7 +329,43 @@ async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or len(args) < 2:
+        await update.message.reply_text(
+            "Usage: /settemplate <slot_id> <template>\n"
+            "Example: /settemplate 1 Weekly Stream {{date}}"
+        )
+        return
+
+    try:
+        slot_id = int(args[0])
+    except (ValueError, TypeError):
+        await update.message.reply_text(
+            "Usage: /settemplate <slot_id> <template>\n"
+            "Example: /settemplate 1 Weekly Stream {{date}}"
+        )
+        return
+
+    if slot_id <= 0:
+        await update.message.reply_text("Slot ID must be a positive integer.")
+        return
+
+    template = " ".join(args[1:])
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await update_slot(slot_id, title_template=template)
+
+        logger.info("Set title_template for slot %s in chat %s", slot_id, chat_id)
+        await update.message.reply_text(f"Template for slot {slot_id} updated to: '{template}'.")
+    except Exception:
+        logger.exception("Failed to set title_template")
+        await update.message.reply_text("Error setting template. Please try again.")
 
 
 async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
