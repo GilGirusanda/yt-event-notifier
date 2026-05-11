@@ -23,6 +23,9 @@ def _s3_coords() -> tuple[str, str]:
 
 
 async def _download_db() -> str:
+    if os.environ.get("APP_PROFILE", "dev").lower() == "dev":
+        return "local_dev.db"
+
     bucket, key = _s3_coords()
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -36,6 +39,9 @@ async def _download_db() -> str:
 
 
 async def _upload_db(path: str) -> None:
+    if os.environ.get("APP_PROFILE", "dev").lower() == "dev":
+        return
+
     bucket, key = _s3_coords()
     if bucket:
         _s3().upload_file(path, bucket, key)

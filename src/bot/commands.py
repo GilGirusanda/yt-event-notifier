@@ -1,7 +1,11 @@
 import logging
+from datetime import datetime
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+
+from src.db.client import db_context
+from src.db.queries import upsert_group, add_slot, list_slots
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +55,11 @@ async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+    logger.info("set_timezone args: %s by %s", context.args, update.effective_user.username)
+    await update.message.reply_text(f"Logged timezone args: {context.args}")
 
 
 async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -67,7 +75,55 @@ async def cmd_set_check_window(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args or len(args) < 3:
+        await update.message.reply_text("Usage: /addslot <day> <HH:MM> <Title...>\nExample: /addslot monday 20:00 Weekly Stream")
+        return
+
+    day_str = args[0]
+    time_str = args[1]
+    title_template = " ".join(args[2:])
+    days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    
+    day_str_lower = day_str.lower()
+    if day_str_lower not in days:
+        await update.message.reply_text(f"Invalid day '{day_str}'. Must be one of: {', '.join(days)}")
+        return
+        
+    day_of_week = days.index(day_str_lower)
+
+    try:
+        # Validate time format
+        dt = datetime.strptime(time_str, "%H:%M")
+        formatted_time = dt.strftime("%H:%M")
+    except ValueError:
+        await update.message.reply_text("Invalid time format. Please use HH:MM (e.g., 20:00).")
+        return
+
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            # Ensure the group is registered before adding a slot
+            await upsert_group(chat_id)
+            slot_id = await add_slot(
+                group_id=chat_id, 
+                day_of_week=day_of_week, 
+                local_time=formatted_time, 
+                title_template=title_template
+            )
+            
+        logger.info("Added slot %s for chat %s", slot_id, chat_id)
+        await update.message.reply_text(
+            f"Slot {slot_id} added successfully for {day_str.capitalize()} at {formatted_time} with title: '{title_template}'."
+        )
+    except Exception as e:
+        logger.exception("Failed to add slot to DB")
+        await update.message.reply_text(f"Error saving slot to database: {e}")
 
 
 async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -83,7 +139,35 @@ async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    pass
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    
+    try:
+        async with db_context():
+            slots = await list_slots(chat_id)
+            
+        if not slots:
+            await update.message.reply_text("No slots configured for this group. Use /addslot to add one.")
+            return
+
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        lines = ["📅 *Configured Slots:*"]
+        for slot in slots:
+            slot_id = slot["slot_id"]
+            day = days[slot["day_of_week"]]
+            time = slot["local_time"]
+            title = slot["title_template"]
+            lines.append(f"• ID: `{slot_id}` | {day} @ {time} | Title: '{title}'")
+            
+        await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+        
+    except Exception as e:
+        logger.exception("Failed to list slots")
+        await update.message.reply_text(f"Error fetching slots: {e}")
 
 
 async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
