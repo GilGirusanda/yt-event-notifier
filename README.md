@@ -61,8 +61,8 @@ The Lambda handler inspects the incoming event shape to determine what triggered
 
 Two EventBridge cron rules control the polling cadence:
 
-- **Baseline rule** — fires every 15 minutes at all times. Handles schedule checks for streams that are not imminent.
-- **Near-stream rule** — fires every 5 minutes within a 30-minute window before any scheduled stream start. Provides more frequent status checks and timely "now live" detection.
+- **Baseline rule** — fires every 15 minutes at all times. Always runs a full poll for all groups.
+- **Near-stream rule** — fires every 5 minutes at all times. On each invocation the Lambda first checks whether any stream is scheduled to start within the next 30 minutes. If yes, it runs a full poll. If no, it exits immediately. This conserves YouTube API quota while providing timely "now live" detection near stream start.
 
 ### Database
 
@@ -153,6 +153,8 @@ Before starting setup, ensure you have access to the following:
 1. In the AWS Console, create an S3 bucket in your preferred region (e.g. `my-yt-notifier-db`).
 2. Block all public access. The Lambda will access it via its IAM role.
 3. Note the bucket name and decide on a key for the database file (default: `db/streams.db`).
+
+> **Security note:** The SQLite file contains Google OAuth tokens (access and refresh). Keep the bucket private and restrict IAM access to the Lambda execution role only. Enable S3 server-side encryption (SSE-S3 or SSE-KMS) for defence in depth.
 
 ### 4. Set Environment Variables
 

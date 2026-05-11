@@ -49,7 +49,7 @@
 - Admins configure **recurring weekly slots** per group (e.g. every Monday at 20:00).
 - Each slot stores:
   - Day of week + local time (interpreted in the group's configured timezone)
-  - A **title template** for the YouTube stream (supports `{{date}}` and `{{channel}}` variables)
+  - A **title template** for the YouTube stream (supports `{{date}}` and `{{channel}}` variables). `{{date}}` resolves to the slot's scheduled date in `DD-MM-YYYY` format in the group's local timezone; `{{channel}}` resolves to the connected YouTube channel name.
   - A **custom notification message** (short promo text appended to Telegram reminders)
 - A group can have multiple weekly slots.
 - Slots are fully independent between groups.
@@ -59,7 +59,7 @@
 - Each group connects **one YouTube channel** via a bot-guided **OAuth 2.0 flow**: the bot sends a Google sign-in link via Telegram; the admin authorises it in a browser; tokens are stored in the database.
 - The bot uses the **YouTube Live Streaming API**: `liveBroadcasts.list`, `liveBroadcasts.insert`, `liveStreams.insert`, `liveBroadcasts.bind`.
 - A configurable **stream check window** (default: 24 hours before a slot) determines how far in advance the bot looks for or creates the stream on YouTube.
-- **Auto-create** (per-group toggle, default: off): if enabled and no broadcast exists for an upcoming slot, the bot creates it on YouTube using the slot's title template and description.
+- **Auto-create** (per-group toggle, default: off): if enabled and no broadcast exists for an upcoming slot, the bot creates it on YouTube using the slot's title template. Auto-created broadcasts use per-group configurable settings: **privacy** (public / unlisted / private, default: `public`) and **description** (plain text, default: empty). See `/setbroadcastprivacy` and `/setbroadcastdescription` in §5.4.
 - If auto-create is off and no stream is found within the check window, the group's admins are alerted via DM and nothing is sent to the group.
 - OAuth access tokens are refreshed automatically before each API call. If refresh fails, group admins are alerted.
 
@@ -89,7 +89,7 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/setautocreate <on\|off>` | Toggle automatic YouTube stream creation for this group |
 | `/setreminder <hours>` | Set the reminder window in hours before stream start (default: 1) |
 | `/setcheckwindow <hours>` | Set how many hours before a slot to check/create the stream (default: 24) |
-| `/addslot <day> <HH:MM>` | Add a weekly recurring slot (e.g. `/addslot monday 20:00`) |
+| `/addslot <day> <HH:MM> [title_template]` | Add a weekly recurring slot. Title template is optional inline shortcut; use `/settemplate` to set or update it later. |
 | `/removeslot <slot_id>` | Remove a scheduled slot by ID |
 | `/settemplate <slot_id> <template>` | Set the YouTube stream title template for a slot |
 | `/setmessage <slot_id> <message>` | Set the custom notification message for a slot |
@@ -97,6 +97,8 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/streams` | List upcoming tracked streams with scheduled times and YouTube links |
 | `/status` | Show bot health, YouTube connection status, and next scheduled poll time |
 | `/check` | Trigger an immediate poll for this group (admin only; rate-limited to once per 5 minutes per group) |
+| `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`) |
+| `/setbroadcastdescription <text>` | Set the default description for auto-created YouTube broadcasts (default: empty) |
 
 ### 5.5 Admin Error Alerts
 
@@ -133,7 +135,7 @@ One Lambda function handles three event sources, distinguished by event shape:
 
 | Source | Detection | Handler |
 |---|---|---|
-| API Gateway — Telegram webhook | `"httpMethod" in event` and `event["path"] != "/oauth/callback"` | Parse Telegram update; dispatch to command handlers |
+| API Gateway — Telegram webhook | `"httpMethod" in event` and `event["path"] != "/oauth/callback"` | Validate `X-Telegram-Bot-Api-Secret-Token` header; reject with HTTP 403 if missing or invalid. Parse Telegram update; dispatch to command handlers. |
 | API Gateway — OAuth callback | `event["path"] == "/oauth/callback"` | Exchange Google auth code for tokens; store; notify group |
 | EventBridge cron | `event.get("source") == "aws.events"` | Run YouTube poll loop (§6.4) |
 
@@ -144,7 +146,7 @@ One Lambda function handles three event sources, distinguished by event shape:
 | Column | Type | Description |
 |---|---|---|
 | `group_id` | INTEGER PK | Telegram chat ID |
-| `timezone` | TEXT | IANA timezone string (e.g. `Europe/London`) |
+| `timezone` | TEXT | IANA timezone string (e.g. `Europe/London`). Validated against the `zoneinfo` database at `/settimezone` time; the bot guides admins with an example prompt if the value is invalid. |
 | `reminder_hours` | REAL | Hours before stream start to send reminder (default: 1) |
 | `check_window_hours` | REAL | Hours before slot to check/create stream (default: 24) |
 | `auto_create` | BOOLEAN | Auto-create streams on YouTube (default: false) |
@@ -187,7 +189,7 @@ One Lambda function handles three event sources, distinguished by event shape:
 
 On each active poll run, for every registered group (in parallel where possible):
 
-1. **Stream check / creation** — compute the next occurrence of each slot; for any occurrence whose `scheduled_start` falls within `check_window_hours` and that has no matching row in `streams`:
+1. **Stream check / creation** — for each slot, compute its next scheduled occurrence. If that occurrence falls within `check_window_hours` from now and has no matching row in `streams`, proceed:
    - Call `liveBroadcasts.list` to search for an existing broadcast at that time.
    - If found: insert a `streams` row.
    - If not found and `auto_create = true`: call `liveBroadcasts.insert` + `liveStreams.insert` + `liveBroadcasts.bind`; insert a `streams` row.
