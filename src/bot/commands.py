@@ -504,6 +504,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+<<<<<<< HEAD
     assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
@@ -516,6 +517,33 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.exception("Manual check failed")
         await update.message.reply_text(f"❌ Error during sync: {e}")
+=======
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    now = int(datetime.now().timestamp())
+
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            group = await get_group(chat_id)
+            last_check = group["last_manual_check"] if group and group["last_manual_check"] else 0
+            if now - last_check < 300:
+                remaining = 300 - (now - last_check)
+                await update.message.reply_text(
+                    f"Rate limited. Please wait {remaining} second(s) before triggering another poll."
+                )
+                return
+            await update_group(chat_id, last_manual_check=now)
+    except Exception:
+        logger.exception("Failed to trigger manual check")
+        await update.message.reply_text("Error triggering poll. Please try again.")
+        return
+
+    await update.message.reply_text("Poll triggered. Checking for upcoming streams now.")
+>>>>>>> 741cb11 (feat: implement /check command)
 
 
 async def cmd_setbroadcastprivacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
