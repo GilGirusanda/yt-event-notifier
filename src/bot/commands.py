@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.db.client import db_context
-from src.db.queries import upsert_group, add_slot, list_slots
+from src.db.queries import upsert_group, add_slot, list_slots, update_group
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +59,32 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
-    logger.info("set_timezone args: %s by %s", context.args, update.effective_user.username)
-    await update.message.reply_text(f"Logged timezone args: {context.args}")
+
+    args = context.args
+    if not args or len(args) != 1:
+        await update.message.reply_text("Usage: /settimezone <Timezone>\nExample: /settimezone Europe/London")
+        return
+
+    tz_str = args[0]
+    
+    try:
+        # Validate timezone
+        ZoneInfo(tz_str)
+    except ZoneInfoNotFoundError:
+        await update.message.reply_text(f"Invalid timezone: '{tz_str}'. Please use standard IANA formats (e.g., Europe/London).")
+        return
+
+    chat_id = update.effective_chat.id
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, timezone=tz_str)
+            
+        logger.info("Set timezone to %s for chat %s", tz_str, chat_id)
+        await update.message.reply_text(f"✅ Timezone successfully set to {tz_str}.")
+    except Exception as e:
+        logger.exception("Failed to set timezone")
+        await update.message.reply_text(f"❌ Error setting timezone: {e}")
 
 
 async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
