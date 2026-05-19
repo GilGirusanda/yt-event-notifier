@@ -37,7 +37,6 @@ class YouTubeClient:
                 broadcastType="all",
                 mine=True,
                 maxResults=50,
-                broadcastStatus=broadcastStatus,
             )
             .execute()
         )

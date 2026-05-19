@@ -57,9 +57,9 @@ async def list_slots(group_id: int) -> Iterable[aiosqlite.Row]:
         return await cur.fetchall()
 
 
-async def remove_slot(slot_id: int) -> None:
+async def remove_slot(slot_id: int, group_id: int) -> None:
     conn = get_connection()
-    await conn.execute("DELETE FROM slots WHERE slot_id = ?", (slot_id,))
+    await conn.execute("DELETE FROM slots WHERE slot_id = ? AND group_id = ?", (slot_id, group_id))
     await conn.commit()
 
 
