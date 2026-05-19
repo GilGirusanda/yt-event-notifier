@@ -36,6 +36,7 @@ def build_application(token: str) -> Application:
 
 
 async def _require_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    assert update.effective_chat and update.effective_user
     member = await context.bot.get_chat_member(
         update.effective_chat.id, update.effective_user.id
     )
@@ -51,13 +52,14 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
 
     chat_id = update.effective_chat.id
     try:
-        flow = create_oauth_flow(state=str(chat_id))
+        flow = create_oauth_flow(chat_id)
         auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
         
         await update.message.reply_text(
@@ -69,6 +71,7 @@ async def cmd_connect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -90,6 +93,7 @@ async def cmd_disconnect_youtube(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -122,6 +126,7 @@ async def cmd_set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def cmd_set_autocreate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -155,6 +160,7 @@ async def cmd_set_check_window(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -207,6 +213,7 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -220,7 +227,7 @@ async def cmd_remove_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     
     try:
         async with db_context():
-            await remove_slot(slot_id)
+            await remove_slot(slot_id, update.effective_chat.id)
         await update.message.reply_text(f"✅ Slot {slot_id} removed successfully.")
     except Exception as e:
         logger.exception("Failed to remove slot")
@@ -236,6 +243,7 @@ async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -268,6 +276,7 @@ async def cmd_list_slots(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -293,6 +302,7 @@ async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
@@ -328,6 +338,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
     if not await _require_admin(update, context):
         await update.message.reply_text("Admin privileges required.")
         return
