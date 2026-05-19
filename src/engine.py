@@ -1,5 +1,6 @@
 import logging
 import os
+import sqlite3
 from datetime import datetime
 
 from dateutil import tz
@@ -40,7 +41,7 @@ def get_next_occurrence(day_of_week: int, local_time: str, timezone: str) -> dat
     return candidate.astimezone(tz.UTC)
 
 
-async def _process_group(bot: Bot, group: dict) -> None:
+async def _process_group(bot: Bot, group: sqlite3.Row) -> None:
     chat_id = group["group_id"]
     timezone = group["timezone"]
     auto_create = group["auto_create"]
