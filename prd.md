@@ -32,11 +32,11 @@
 
 ## 4. Users & Roles
 
-| Role | Description | Permissions |
-|---|---|---|
-| **Group/Channel Admin** | A Telegram user with admin rights in the configured chat | Full bot configuration: YouTube connection, schedule, templates, reminder settings |
-| **Group/Channel Member** | Any other member of the chat | Receives notifications; no configuration access |
-| **Bot Owner** | The person who deploys the bot | Defined at deploy time via `ADMIN_CHAT_ID`; receives critical system error DMs |
+| Role                     | Description                                              | Permissions                                                                        |
+| ------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Group/Channel Admin**  | A Telegram user with admin rights in the configured chat | Full bot configuration: YouTube connection, schedule, templates, reminder settings |
+| **Group/Channel Member** | Any other member of the chat                             | Receives notifications; no configuration access                                    |
+| **Bot Owner**            | The person who deploys the bot                           | Defined at deploy time via `ADMIN_CHAT_ID`; receives critical system error DMs     |
 
 > Admin status is verified against the Telegram API at command execution time.
 
@@ -49,7 +49,7 @@
 - Admins configure **recurring weekly slots** per group (e.g. every Monday at 20:00).
 - Each slot stores:
   - Day of week + local time (interpreted in the group's configured timezone)
-  - A **title template** for the YouTube stream (supports `{{date}}` and `{{channel}}` variables). `{{date}}` resolves to the slot's scheduled date in `DD-MM-YYYY` format in the group's local timezone; `{{channel}}` resolves to the connected YouTube channel name.
+  - A **title template** for the YouTube stream (supports `{date}` and `{channel}` variables). `{date}` resolves to the slot's scheduled date in `DD-MM-YYYY` format in the group's local timezone; `{channel}` resolves to the connected YouTube channel name.
   - A **custom notification message** (short promo text appended to Telegram reminders)
 - A group can have multiple weekly slots.
 - Slots are fully independent between groups.
@@ -67,10 +67,10 @@
 
 Two notification types per stream:
 
-| Event | Target | Content |
-|---|---|---|
+| Event                                                                               | Target        | Content                                                                     |
+| ----------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------- |
 | `reminder_hours` before `scheduledStartTime` (default: 1 h, configurable per group) | Group/channel | Stream title, scheduled time (local timezone), YouTube link, custom message |
-| Stream status transitions to `live` | Group/channel | "Now live" alert with stream title and YouTube link |
+| Stream status transitions to `live`                                                 | Group/channel | "Now live" alert with stream title and YouTube link                         |
 
 - Duplicate notifications are prevented via `reminder_sent` and `live_sent` flags per stream record.
 - Each notification type is sent exactly once per stream occurrence.
@@ -79,34 +79,34 @@ Two notification types per stream:
 
 Configuration commands require Telegram admin rights. `/start`, `/streams`, and `/help` are available to all members.
 
-| Command | Description |
-|---|---|
-| `/start` | Register the bot in this group/channel and display setup instructions |
-| `/help` | Display all available commands |
-| `/connectyoutube` | Start the OAuth 2.0 flow to link a YouTube channel to this group |
-| `/disconnectyoutube` | Remove the YouTube channel connection and delete stored tokens |
-| `/settimezone <tz>` | Set the group's timezone (IANA format, e.g. `Europe/London`) |
-| `/setautocreate <on\|off>` | Toggle automatic YouTube stream creation for this group |
-| `/setreminder <hours>` | Set the reminder window in hours before stream start (default: 1) |
-| `/setcheckwindow <hours>` | Set how many hours before a slot to check/create the stream (default: 24) |
-| `/addslot <day> <HH:MM> [title_template]` | Add a weekly recurring slot. Title template is optional inline shortcut; use `/settemplate` to set or update it later. |
-| `/removeslot <slot_id>` | Remove a scheduled slot by ID |
-| `/settemplate <slot_id> <template>` | Set the YouTube stream title template for a slot |
-| `/setmessage <slot_id> <message>` | Set the custom notification message for a slot |
-| `/listslots` | List all configured slots with their IDs and settings |
-| `/streams` | List upcoming tracked streams with scheduled times and YouTube links |
-| `/status` | Show bot health, YouTube connection status, and next scheduled poll time |
-| `/check` | Trigger an immediate poll for this group (admin only; rate-limited to once per 5 minutes per group) |
-| `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`) |
-| `/setbroadcastdescription <text>` | Set the default description for auto-created YouTube broadcasts (default: empty) |
+| Command                                            | Description                                                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `/start`                                           | Register the bot in this group/channel and display setup instructions                                                  |
+| `/help`                                            | Display all available commands                                                                                         |
+| `/connectyoutube`                                  | Start the OAuth 2.0 flow to link a YouTube channel to this group                                                       |
+| `/disconnectyoutube`                               | Remove the YouTube channel connection and delete stored tokens                                                         |
+| `/settimezone <tz>`                                | Set the group's timezone (IANA format, e.g. `Europe/London`)                                                           |
+| `/setautocreate <on\|off>`                         | Toggle automatic YouTube stream creation for this group                                                                |
+| `/setreminder <hours>`                             | Set the reminder window in hours before stream start (default: 1)                                                      |
+| `/setcheckwindow <hours>`                          | Set how many hours before a slot to check/create the stream (default: 24)                                              |
+| `/addslot <day> <HH:MM> [title_template]`          | Add a weekly recurring slot. Title template is optional inline shortcut; use `/settemplate` to set or update it later. |
+| `/removeslot <slot_id>`                            | Remove a scheduled slot by ID                                                                                          |
+| `/settemplate <slot_id> <template>`                | Set the YouTube stream title template for a slot                                                                       |
+| `/setmessage <slot_id> <message>`                  | Set the custom notification message for a slot                                                                         |
+| `/listslots`                                       | List all configured slots with their IDs and settings                                                                  |
+| `/streams`                                         | List upcoming tracked streams with scheduled times and YouTube links                                                   |
+| `/status`                                          | Show bot health, YouTube connection status, and next scheduled poll time                                               |
+| `/check`                                           | Trigger an immediate poll for this group (admin only; rate-limited to once per 5 minutes per group)                    |
+| `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                                        |
+| `/setbroadcastdescription <text>`                  | Set the default description for auto-created YouTube broadcasts (default: empty)                                       |
 
 ### 5.5 Admin Error Alerts
 
 Two alert tiers:
 
-| Tier | Recipient | Triggers |
-|---|---|---|
-| **Critical** | Bot owner (DM to `ADMIN_CHAT_ID`) | Lambda crash, S3 read/write failure, database corruption |
+| Tier           | Recipient                                     | Triggers                                                                                              |
+| -------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Critical**   | Bot owner (DM to `ADMIN_CHAT_ID`)             | Lambda crash, S3 read/write failure, database corruption                                              |
 | **Actionable** | All admins of the affected group (DM to each) | No stream found and auto-create is off, OAuth token refresh failure, YouTube API error for that group |
 
 All alerts include a timestamp, error type, and short description.
@@ -117,68 +117,68 @@ All alerts include a timestamp, error type, and short description.
 
 ### 6.1 Stack
 
-| Layer | Technology |
-|---|---|
-| Language | Python 3.12 |
-| Telegram framework | `python-telegram-bot` v21+ |
-| YouTube API | `google-api-python-client` (`liveBroadcasts`, `liveStreams`) |
-| Google Auth | `google-auth-oauthlib` |
-| Database | SQLite via `aiosqlite` |
-| DB persistence | AWS S3 (SQLite file downloaded at start of invocation, uploaded on exit) |
-| Deployment | AWS Lambda (single function) |
-| Scheduling | AWS EventBridge (two cron rules — see §6.4) |
-| Webhook ingress | AWS API Gateway (HTTP API) |
+| Layer              | Technology                                                               |
+| ------------------ | ------------------------------------------------------------------------ |
+| Language           | Python 3.12                                                              |
+| Telegram framework | `python-telegram-bot` v21+                                               |
+| YouTube API        | `google-api-python-client` (`liveBroadcasts`, `liveStreams`)             |
+| Google Auth        | `google-auth-oauthlib`                                                   |
+| Database           | SQLite via `aiosqlite`                                                   |
+| DB persistence     | AWS S3 (SQLite file downloaded at start of invocation, uploaded on exit) |
+| Deployment         | AWS Lambda (single function)                                             |
+| Scheduling         | AWS EventBridge (two cron rules — see §6.4)                              |
+| Webhook ingress    | AWS API Gateway (HTTP API)                                               |
 
 ### 6.2 Lambda Entry Points
 
 One Lambda function handles three event sources, distinguished by event shape:
 
-| Source | Detection | Handler |
-|---|---|---|
+| Source                         | Detection                                                        | Handler                                                                                                                                             |
+| ------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API Gateway — Telegram webhook | `"httpMethod" in event` and `event["path"] != "/oauth/callback"` | Validate `X-Telegram-Bot-Api-Secret-Token` header; reject with HTTP 403 if missing or invalid. Parse Telegram update; dispatch to command handlers. |
-| API Gateway — OAuth callback | `event["path"] == "/oauth/callback"` | Exchange Google auth code for tokens; store; notify group |
-| EventBridge cron | `event.get("source") == "aws.events"` | Run YouTube poll loop (§6.4) |
+| API Gateway — OAuth callback   | `event["path"] == "/oauth/callback"`                             | Exchange Google auth code for tokens; store; notify group                                                                                           |
+| EventBridge cron               | `event.get("source") == "aws.events"`                            | Run YouTube poll loop (§6.4)                                                                                                                        |
 
 ### 6.3 Database Schema
 
 **`groups`** — one row per registered Telegram group or channel
 
-| Column | Type | Description |
-|---|---|---|
-| `group_id` | INTEGER PK | Telegram chat ID |
-| `timezone` | TEXT | IANA timezone string (e.g. `Europe/London`). Validated against the `zoneinfo` database at `/settimezone` time; the bot guides admins with an example prompt if the value is invalid. |
-| `reminder_hours` | REAL | Hours before stream start to send reminder (default: 1) |
-| `check_window_hours` | REAL | Hours before slot to check/create stream (default: 24) |
-| `auto_create` | BOOLEAN | Auto-create streams on YouTube (default: false) |
-| `yt_channel_id` | TEXT | Connected YouTube channel ID (nullable) |
-| `yt_access_token` | TEXT | OAuth access token (nullable) |
-| `yt_refresh_token` | TEXT | OAuth refresh token (nullable) |
-| `yt_token_expiry` | INTEGER | Unix timestamp of access token expiry (nullable) |
-| `last_manual_check` | INTEGER | Unix timestamp of last `/check` invocation (for rate-limiting) |
+| Column               | Type       | Description                                                                                                                                                                          |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `group_id`           | INTEGER PK | Telegram chat ID                                                                                                                                                                     |
+| `timezone`           | TEXT       | IANA timezone string (e.g. `Europe/London`). Validated against the `zoneinfo` database at `/settimezone` time; the bot guides admins with an example prompt if the value is invalid. |
+| `reminder_hours`     | REAL       | Hours before stream start to send reminder (default: 1)                                                                                                                              |
+| `check_window_hours` | REAL       | Hours before slot to check/create stream (default: 24)                                                                                                                               |
+| `auto_create`        | BOOLEAN    | Auto-create streams on YouTube (default: false)                                                                                                                                      |
+| `yt_channel_id`      | TEXT       | Connected YouTube channel ID (nullable)                                                                                                                                              |
+| `yt_access_token`    | TEXT       | OAuth access token (nullable)                                                                                                                                                        |
+| `yt_refresh_token`   | TEXT       | OAuth refresh token (nullable)                                                                                                                                                       |
+| `yt_token_expiry`    | INTEGER    | Unix timestamp of access token expiry (nullable)                                                                                                                                     |
+| `last_manual_check`  | INTEGER    | Unix timestamp of last `/check` invocation (for rate-limiting)                                                                                                                       |
 
 **`slots`** — weekly schedule slots per group
 
-| Column | Type | Description |
-|---|---|---|
-| `slot_id` | INTEGER PK | Auto-increment |
-| `group_id` | INTEGER FK → `groups` | Parent group |
-| `day_of_week` | INTEGER | 0 = Monday … 6 = Sunday |
-| `local_time` | TEXT | `HH:MM` in the group's timezone |
-| `title_template` | TEXT | YouTube stream title; supports `{{date}}`, `{{channel}}` |
-| `custom_message` | TEXT | Promo text appended to Telegram notifications |
+| Column           | Type                  | Description                                          |
+| ---------------- | --------------------- | ---------------------------------------------------- |
+| `slot_id`        | INTEGER PK            | Auto-increment                                       |
+| `group_id`       | INTEGER FK → `groups` | Parent group                                         |
+| `day_of_week`    | INTEGER               | 0 = Monday … 6 = Sunday                              |
+| `local_time`     | TEXT                  | `HH:MM` in the group's timezone                      |
+| `title_template` | TEXT                  | YouTube stream title; supports `{date}`, `{channel}` |
+| `custom_message` | TEXT                  | Promo text appended to Telegram notifications        |
 
 **`streams`** — active/upcoming streams only; ended streams are deleted on the next poll
 
-| Column | Type | Description |
-|---|---|---|
-| `broadcast_id` | TEXT PK | YouTube broadcast ID |
-| `group_id` | INTEGER FK → `groups` | Parent group |
-| `slot_id` | INTEGER FK → `slots` | Source slot |
-| `scheduled_start` | INTEGER | Unix timestamp of scheduled start (UTC) |
-| `status` | TEXT | `scheduled`, `live`, or `ended` |
-| `yt_url` | TEXT | YouTube watch URL |
-| `reminder_sent` | BOOLEAN | Whether the pre-stream reminder has been dispatched |
-| `live_sent` | BOOLEAN | Whether the "now live" alert has been dispatched |
+| Column            | Type                  | Description                                         |
+| ----------------- | --------------------- | --------------------------------------------------- |
+| `broadcast_id`    | TEXT PK               | YouTube broadcast ID                                |
+| `group_id`        | INTEGER FK → `groups` | Parent group                                        |
+| `slot_id`         | INTEGER FK → `slots`  | Source slot                                         |
+| `scheduled_start` | INTEGER               | Unix timestamp of scheduled start (UTC)             |
+| `status`          | TEXT                  | `scheduled`, `live`, or `ended`                     |
+| `yt_url`          | TEXT                  | YouTube watch URL                                   |
+| `reminder_sent`   | BOOLEAN               | Whether the pre-stream reminder has been dispatched |
+| `live_sent`       | BOOLEAN               | Whether the "now live" alert has been dispatched    |
 
 ### 6.4 Cron Poll Loop
 
@@ -219,31 +219,31 @@ On each active poll run, for every registered group (in parallel where possible)
 
 ## 7. Environment Variables
 
-| Variable | Description |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
-| `GOOGLE_CLIENT_ID` | OAuth 2.0 client ID from Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 client secret |
-| `GOOGLE_REDIRECT_URI` | Full HTTPS URL of the API Gateway OAuth callback endpoint |
-| `ADMIN_CHAT_ID` | Telegram user ID of the bot owner (for critical error DMs) |
-| `S3_BUCKET` | Name of the S3 bucket holding the SQLite file |
-| `S3_DB_KEY` | S3 object key for the SQLite file (default: `db/streams.db`) |
-| `LOG_BUCKET` | S3 bucket for rotated log files; enables file logging when set outside Lambda |
-| `LOG_FILE` | Local path for the active log file (default: `logs/app.log`) |
-| `LOCAL_PORT` | TCP port for the local development server (default: `8080`) |
+| Variable               | Description                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `TELEGRAM_BOT_TOKEN`   | Bot token from BotFather                                                      |
+| `GOOGLE_CLIENT_ID`     | OAuth 2.0 client ID from Google Cloud Console                                 |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 client secret                                                       |
+| `GOOGLE_REDIRECT_URI`  | Full HTTPS URL of the API Gateway OAuth callback endpoint                     |
+| `ADMIN_CHAT_ID`        | Telegram user ID of the bot owner (for critical error DMs)                    |
+| `S3_BUCKET`            | Name of the S3 bucket holding the SQLite file                                 |
+| `S3_DB_KEY`            | S3 object key for the SQLite file (default: `db/streams.db`)                  |
+| `LOG_BUCKET`           | S3 bucket for rotated log files; enables file logging when set outside Lambda |
+| `LOG_FILE`             | Local path for the active log file (default: `logs/app.log`)                  |
+| `LOCAL_PORT`           | TCP port for the local development server (default: `8080`)                   |
 
 ---
 
 ## 8. Constraints & Risks
 
-| Risk | Mitigation |
-|---|---|
-| S3 concurrent write collision | At this scale (5 groups, ~5 streams/week), truly concurrent invocations are rare. Enable S3 object versioning; detect version conflict on upload and retry with a fresh download. |
-| OAuth token expiry mid-poll | Refresh token before every API call using the stored refresh token; alert group admins if refresh fails. |
-| YouTube API quota | `liveBroadcasts.list` costs 1 unit/call. Estimated peak usage: ~300 units/day. No quota tracking needed for v1. |
-| Telegram rate limits (429) | Catch `RetryAfter` responses from `python-telegram-bot`; the library handles backoff automatically. |
-| Live detection lag | Acceptable: up to 5 minutes near stream start (adaptive polling window). |
-| Lambda cold start + S3 download latency | Acceptable for this workload; no sub-second SLA on cron-triggered runs. |
+| Risk                                    | Mitigation                                                                                                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S3 concurrent write collision           | At this scale (5 groups, ~5 streams/week), truly concurrent invocations are rare. Enable S3 object versioning; detect version conflict on upload and retry with a fresh download. |
+| OAuth token expiry mid-poll             | Refresh token before every API call using the stored refresh token; alert group admins if refresh fails.                                                                          |
+| YouTube API quota                       | `liveBroadcasts.list` costs 1 unit/call. Estimated peak usage: ~300 units/day. No quota tracking needed for v1.                                                                   |
+| Telegram rate limits (429)              | Catch `RetryAfter` responses from `python-telegram-bot`; the library handles backoff automatically.                                                                               |
+| Live detection lag                      | Acceptable: up to 5 minutes near stream start (adaptive polling window).                                                                                                          |
+| Lambda cold start + S3 download latency | Acceptable for this workload; no sub-second SLA on cron-triggered runs.                                                                                                           |
 
 ---
 
@@ -252,5 +252,5 @@ On each active poll run, for every registered group (in parallel where possible)
 - Edit the reminder message in place when the stream goes live, instead of sending a separate "now live" message.
 - Multiple YouTube channels per group (each with its own OAuth connection).
 - Per-slot reminder window override (currently reminder window is group-level only).
-- Additional title template variables beyond `{{date}}` and `{{channel}}`.
+- Additional title template variables beyond `{date}` and `{channel}`.
 - Stream notification history and basic analytics.

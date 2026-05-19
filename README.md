@@ -103,18 +103,18 @@ yt-event-notifier/
 
 ### Module Descriptions
 
-| Module | Responsibility |
-| --- | --- |
-| `src/handler.py` | Single Lambda entry point. Inspects the incoming event shape and dispatches to the Telegram bot application, the OAuth callback handler, or the poll loop. |
-| `src/poller.py` | Runs on every EventBridge trigger. For each registered group: checks/creates YouTube broadcasts, sends reminders, detects live status, and cleans up ended stream records. |
-| `src/local_server.py` | Lightweight aiohttp-based HTTP server used during local development to receive Telegram webhook updates and OAuth callbacks without deploying to AWS. |
-| `src/bot/commands.py` | Registers and implements all Telegram slash commands using `python-telegram-bot`. Validates admin permissions via the Telegram API before executing any configuration command. |
-| `src/bot/messages.py` | Renders reminder and "now live" notification text, applying per-slot custom messages and localising stream times to the group's configured timezone. |
-| `src/db/client.py` | Manages the SQLite connection lifecycle. Downloads the `.db` file from S3 at the start of each invocation and uploads it back after processing. |
-| `src/db/schema.py` | Defines the three core tables (`groups`, `slots`, `streams`) and handles any incremental schema migrations. |
-| `src/db/queries.py` | Provides async CRUD functions used by the poller and command handlers, keeping SQL out of business logic. |
-| `src/youtube/client.py` | Wraps the YouTube Live Streaming API: searching for existing broadcasts, creating broadcasts and stream objects, binding them, and checking broadcast status. |
-| `src/youtube/oauth.py` | Handles the full OAuth 2.0 lifecycle: generating the authorisation URL with a signed `state` parameter, exchanging the callback code for tokens, and refreshing expired access tokens before each API call. |
+| Module                  | Responsibility                                                                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/handler.py`        | Single Lambda entry point. Inspects the incoming event shape and dispatches to the Telegram bot application, the OAuth callback handler, or the poll loop.                                                  |
+| `src/poller.py`         | Runs on every EventBridge trigger. For each registered group: checks/creates YouTube broadcasts, sends reminders, detects live status, and cleans up ended stream records.                                  |
+| `src/local_server.py`   | Lightweight aiohttp-based HTTP server used during local development to receive Telegram webhook updates and OAuth callbacks without deploying to AWS.                                                       |
+| `src/bot/commands.py`   | Registers and implements all Telegram slash commands using `python-telegram-bot`. Validates admin permissions via the Telegram API before executing any configuration command.                              |
+| `src/bot/messages.py`   | Renders reminder and "now live" notification text, applying per-slot custom messages and localising stream times to the group's configured timezone.                                                        |
+| `src/db/client.py`      | Manages the SQLite connection lifecycle. Downloads the `.db` file from S3 at the start of each invocation and uploads it back after processing.                                                             |
+| `src/db/schema.py`      | Defines the three core tables (`groups`, `slots`, `streams`) and handles any incremental schema migrations.                                                                                                 |
+| `src/db/queries.py`     | Provides async CRUD functions used by the poller and command handlers, keeping SQL out of business logic.                                                                                                   |
+| `src/youtube/client.py` | Wraps the YouTube Live Streaming API: searching for existing broadcasts, creating broadcasts and stream objects, binding them, and checking broadcast status.                                               |
+| `src/youtube/oauth.py`  | Handles the full OAuth 2.0 lifecycle: generating the authorisation URL with a signed `state` parameter, exchanging the callback code for tokens, and refreshing expired access tokens before each API call. |
 
 ---
 
@@ -270,15 +270,15 @@ After adding the bot to a Telegram group, an admin runs the following sequence t
 4. **Set a stream title template** for a slot:
 
    ```
-   /settemplate 1 Weekly Stream - {{date}}
+   /settemplate 1 Weekly Stream - {date}
    ```
 
-   Supported variables: `{{date}}`, `{{channel}}`.
+   Supported variables: `{date}`, `{channel}`.
 
 5. **Set a custom reminder or live message** (optional):
 
    ```
-   /setmessage 1 Reminder: stream starts in {{hours}} hours!
+   /setmessage 1 Reminder: stream starts in {hours} hours!
    ```
 
 6. **Enable auto-create** if you want the bot to create YouTube broadcasts automatically when none is found:
@@ -309,7 +309,7 @@ After adding the bot to a Telegram group, an admin runs the following sequence t
 | `/setcheckwindow <hours>`           | How many hours before stream start the bot begins actively checking YouTube for the broadcast     | Admin  |
 | `/addslot <day> <HH:MM>`            | Add a recurring weekly stream slot. Day is a full English day name (e.g. `Tuesday`)               | Admin  |
 | `/removeslot <slot_id>`             | Remove a weekly slot by its ID (see `/listslots`)                                                 | Admin  |
-| `/settemplate <slot_id> <template>` | Set the YouTube broadcast title template for a slot. Supports `{{date}}` and `{{channel}}`        | Admin  |
+| `/settemplate <slot_id> <template>` | Set the YouTube broadcast title template for a slot. Supports `{date}` and `{channel}`            | Admin  |
 | `/setmessage <slot_id> <message>`   | Set the Telegram message sent as a reminder or live alert for a slot                              | Admin  |
 | `/listslots`                        | List all configured slots with their IDs, times, and templates                                    | Admin  |
 | `/streams`                          | List upcoming and active streams the bot is tracking for this group                               | Admin  |
@@ -320,18 +320,18 @@ After adding the bot to a Telegram group, an admin runs the following sequence t
 
 ## Environment Variables Reference
 
-| Variable               | Required | Default         | Description                                                                                  |
-| ---------------------- | -------- | --------------- | -------------------------------------------------------------------------------------------- |
-| `TELEGRAM_BOT_TOKEN`   | Yes      | —               | Bot token from BotFather                                                                     |
-| `GOOGLE_CLIENT_ID`     | Yes      | —               | OAuth 2.0 client ID from Google Cloud Console                                                |
-| `GOOGLE_CLIENT_SECRET` | Yes      | —               | OAuth 2.0 client secret from Google Cloud Console                                            |
-| `GOOGLE_REDIRECT_URI`  | Yes      | —               | Full URI of the `/oauth/callback` API Gateway endpoint                                       |
-| `ADMIN_CHAT_ID`        | Yes      | —               | Telegram user ID of the bot owner. Receives critical error alerts (Lambda crash, S3 failure) |
-| `S3_BUCKET`            | Yes      | —               | Name of the S3 bucket used to store the SQLite database file                                 |
-| `S3_DB_KEY`            | No       | `db/streams.db` | S3 object key for the SQLite database file                                                   |
+| Variable               | Required | Default         | Description                                                                                                                                                                        |
+| ---------------------- | -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TELEGRAM_BOT_TOKEN`   | Yes      | —               | Bot token from BotFather                                                                                                                                                           |
+| `GOOGLE_CLIENT_ID`     | Yes      | —               | OAuth 2.0 client ID from Google Cloud Console                                                                                                                                      |
+| `GOOGLE_CLIENT_SECRET` | Yes      | —               | OAuth 2.0 client secret from Google Cloud Console                                                                                                                                  |
+| `GOOGLE_REDIRECT_URI`  | Yes      | —               | Full URI of the `/oauth/callback` API Gateway endpoint                                                                                                                             |
+| `ADMIN_CHAT_ID`        | Yes      | —               | Telegram user ID of the bot owner. Receives critical error alerts (Lambda crash, S3 failure)                                                                                       |
+| `S3_BUCKET`            | Yes      | —               | Name of the S3 bucket used to store the SQLite database file                                                                                                                       |
+| `S3_DB_KEY`            | No       | `db/streams.db` | S3 object key for the SQLite database file                                                                                                                                         |
 | `LOG_BUCKET`           | No       | —               | S3 bucket to receive rotated log files. When set (and not running in Lambda), a rotating file handler is enabled in addition to stdout. Ignored in Lambda — logs go to CloudWatch. |
-| `LOG_FILE`             | No       | `logs/app.log`  | Local path for the active log file. Rotated files are written alongside it before upload.    |
-| `LOCAL_PORT`           | No       | `8080`          | TCP port the local development server (`local_server.py`) listens on.                        |
+| `LOG_FILE`             | No       | `logs/app.log`  | Local path for the active log file. Rotated files are written alongside it before upload.                                                                                          |
+| `LOCAL_PORT`           | No       | `8080`          | TCP port the local development server (`local_server.py`) listens on.                                                                                                              |
 
 ### Error Alert Tiers
 
