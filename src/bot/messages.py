@@ -28,8 +28,6 @@ def render_live_alert(title: str, yt_url: str, custom_message: str = "") -> str:
 
 
 def render_slot_title(template: str, scheduled_start: datetime, channel: str) -> str:
-    return (
-        template
-        .replace("{{date}}", scheduled_start.strftime("%Y-%m-%d"))
-        .replace("{{channel}}", channel)
+    return template.replace("{date}", scheduled_start.strftime("%Y-%m-%d")).replace(
+        "{channel}", channel
     )
