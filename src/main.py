@@ -5,13 +5,11 @@ import sys
 
 from aiohttp import web
 from dotenv import load_dotenv
-from telegram import Bot
 
 from src.logging_config import setup_logging
 from src.bot.commands import build_application
 from src.db.client import db_context
 from src.db.queries import update_group
-from src.youtube.auth import create_oauth_flow
 
 
 async def oauth_callback(request: web.Request) -> web.Response:
@@ -21,19 +19,16 @@ async def oauth_callback(request: web.Request) -> web.Response:
     
     if not state or not code:
         return web.Response(text="Missing state or code", status=400)
-        
-    try:
-        chat_id = int(state)
-    except ValueError:
-        return web.Response(text="Invalid state parameter", status=400)
-        
+
     try:
         # Retrieve the exact flow instance from memory to preserve PKCE code_verifier
         from src.youtube.auth import get_oauth_flow
-        flow = get_oauth_flow(state)
-        
-        if not flow:
+        result = get_oauth_flow(state)
+
+        if not result:
             return web.Response(text="Invalid or expired OAuth state. Please generate a new link in Telegram.", status=400)
+
+        flow, chat_id = result
             
         # Exchange the authorization code for access/refresh tokens
         flow.fetch_token(code=code)
@@ -83,6 +78,7 @@ async def async_main() -> None:
         logger.info("Starting Telegram bot polling and local web server...")
         await app.initialize()
         await app.start()
+        assert app.updater
         await app.updater.start_polling()
 
         web_app = web.Application()
