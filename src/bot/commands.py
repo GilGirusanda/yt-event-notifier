@@ -601,33 +601,13 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Admin privileges required.")
         return
 
-    chat_id = update.effective_chat.id
-    now = int(datetime.now().timestamp())
-
+    await update.message.reply_text("🔄 Running manual sync with YouTube...")
     try:
-        async with db_context():
-            await upsert_group(chat_id)
-            group = await get_group(chat_id)
-            last_check = (
-                group["last_manual_check"]
-                if group and group["last_manual_check"]
-                else 0
-            )
-            if now - last_check < 300:
-                remaining = 300 - (now - last_check)
-                await update.message.reply_text(
-                    f"Rate limited. Please wait {remaining} second(s) before triggering another poll."
-                )
-                return
-            await update_group(chat_id, last_manual_check=now)
-    except Exception:
-        logger.exception("Failed to trigger manual check")
-        await update.message.reply_text("Error triggering poll. Please try again.")
-        return
-
-    await update.message.reply_text(
-        "Poll triggered. Checking for upcoming streams now."
-    )
+        await run_polling_cycle(context.bot)
+        await update.message.reply_text("✅ Sync complete! Use /streams to see tracked broadcasts.")
+    except Exception as e:
+        logger.exception("Manual check failed")
+        await update.message.reply_text(f"❌ Error during sync: {e}")
 
 
 async def cmd_setbroadcastprivacy(
