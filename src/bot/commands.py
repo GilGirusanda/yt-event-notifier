@@ -42,6 +42,7 @@ def build_application(token: str) -> Application:
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("check", cmd_check))
     app.add_handler(CommandHandler("setbroadcastprivacy", cmd_setbroadcastprivacy))
+    app.add_handler(CommandHandler("setbroadcastdescription", cmd_setbroadcastdescription))
     return app
 
 
@@ -608,6 +609,39 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.exception("Manual check failed")
         await update.message.reply_text(f"❌ Error during sync: {e}")
+
+
+async def cmd_setbroadcastdescription(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    assert update.message and update.effective_chat
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    args = context.args
+    if not args:
+        await update.message.reply_text(
+            "Usage: /setbroadcastdescription <text>\n"
+            "Example: /setbroadcastdescription Weekly live Q&A stream"
+        )
+        return
+
+    description = " ".join(args)
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, broadcast_description=description)
+
+        logger.info("Set broadcast_description for chat %s", chat_id)
+        await update.message.reply_text(f"Broadcast description set to: '{description}'.")
+    except Exception:
+        logger.exception("Failed to set broadcast_description")
+        await update.message.reply_text(
+            "Error setting broadcast description. Please try again."
+        )
 
 
 async def cmd_setbroadcastprivacy(
