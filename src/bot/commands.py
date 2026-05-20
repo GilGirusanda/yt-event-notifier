@@ -18,7 +18,6 @@ from src.db.queries import (
 )
 from src.youtube.auth import create_oauth_flow
 from src.engine import run_polling_cycle
-from dateutil import tz
 
 logger = logging.getLogger(__name__)
 
