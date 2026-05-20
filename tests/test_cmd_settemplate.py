@@ -37,7 +37,7 @@ async def test_set_template_success():
     ):
         await cmd_set_template(update, context)
 
-    mock_update_slot.assert_awaited_once_with(1, title_template="Weekly Stream")
+    mock_update_slot.assert_awaited_once_with(1, 123456, title_template="Weekly Stream")
     reply_text = update.message.reply_text.call_args[0][0]
     assert "1" in reply_text
     assert "Weekly Stream" in reply_text
@@ -55,7 +55,7 @@ async def test_set_template_single_word_template():
     ):
         await cmd_set_template(update, context)
 
-    mock_update_slot.assert_awaited_once_with(2, title_template="MyStream")
+    mock_update_slot.assert_awaited_once_with(2, 123456, title_template="MyStream")
     reply_text = update.message.reply_text.call_args[0][0]
     assert "2" in reply_text
     assert "MyStream" in reply_text
@@ -225,7 +225,7 @@ async def test_set_template_minimum_valid_slot_id():
     ):
         await cmd_set_template(update, context)
 
-    mock_update_slot.assert_awaited_once_with(1, title_template="Template")
+    mock_update_slot.assert_awaited_once_with(1, 123456, title_template="Template")
     reply_text = update.message.reply_text.call_args[0][0]
     assert "1" in reply_text
 

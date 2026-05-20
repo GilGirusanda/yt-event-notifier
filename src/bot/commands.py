@@ -423,7 +423,7 @@ async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     try:
         async with db_context():
-            await update_slot(slot_id, title_template=template)
+            await update_slot(slot_id, chat_id, title_template=template)
 
         logger.info("Set title_template for slot %s in chat %s", slot_id, chat_id)
         await update.message.reply_text(
@@ -466,7 +466,7 @@ async def cmd_set_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     try:
         async with db_context():
-            await update_slot(slot_id, custom_message=message)
+            await update_slot(slot_id, chat_id, custom_message=message)
 
         logger.info("Set custom_message for slot %s in chat %s", slot_id, chat_id)
         await update.message.reply_text(

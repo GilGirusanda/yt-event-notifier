@@ -63,12 +63,12 @@ async def remove_slot(slot_id: int, group_id: int) -> None:
     await conn.commit()
 
 
-async def update_slot(slot_id: int, **fields: Any) -> None:
+async def update_slot(slot_id: int, group_id: int, **fields: Any) -> None:
     conn = get_connection()
     set_clause = ", ".join(f"{k} = ?" for k in fields)
     await conn.execute(
-        f"UPDATE slots SET {set_clause} WHERE slot_id = ?",
-        (*fields.values(), slot_id),
+        f"UPDATE slots SET {set_clause} WHERE slot_id = ? AND group_id = ?",
+        (*fields.values(), slot_id, group_id),
     )
     await conn.commit()
 

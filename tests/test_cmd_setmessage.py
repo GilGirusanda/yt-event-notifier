@@ -37,7 +37,7 @@ async def test_set_message_success_single_word():
     ):
         await cmd_set_message(update, context)
 
-    mock_update_slot.assert_awaited_once_with(1, custom_message="Hello!")
+    mock_update_slot.assert_awaited_once_with(1, 123456, custom_message="Hello!")
     reply = update.message.reply_text.call_args[0][0]
     assert "1" in reply
     assert "Hello!" in reply
@@ -55,7 +55,7 @@ async def test_set_message_success_multi_word():
     ):
         await cmd_set_message(update, context)
 
-    mock_update_slot.assert_awaited_once_with(3, custom_message="Join us for the weekly stream!")
+    mock_update_slot.assert_awaited_once_with(3, 123456, custom_message="Join us for the weekly stream!")
     reply = update.message.reply_text.call_args[0][0]
     assert "3" in reply
     assert "Join us for the weekly stream!" in reply
@@ -208,7 +208,7 @@ async def test_set_message_minimum_valid_slot_id():
     ):
         await cmd_set_message(update, context)
 
-    mock_update_slot.assert_awaited_once_with(1, custom_message="msg")
+    mock_update_slot.assert_awaited_once_with(1, 123456, custom_message="msg")
     reply = update.message.reply_text.call_args[0][0]
     assert "1" in reply
 
@@ -225,7 +225,7 @@ async def test_set_message_large_slot_id():
     ):
         await cmd_set_message(update, context)
 
-    mock_update_slot.assert_awaited_once_with(9999, custom_message="Some message")
+    mock_update_slot.assert_awaited_once_with(9999, 123456, custom_message="Some message")
     reply = update.message.reply_text.call_args[0][0]
     assert "9999" in reply
 
