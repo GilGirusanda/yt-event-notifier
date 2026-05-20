@@ -26,11 +26,28 @@ def make_db_context_mock():
     return cm
 
 
+def make_group(**overrides) -> dict:
+    defaults = {
+        "group_id": 123456,
+        "timezone": "UTC",
+        "reminder_hours": 1.0,
+        "check_window_hours": 24.0,
+        "auto_create": 0,
+        "yt_channel_id": None,
+        "yt_access_token": None,
+        "yt_refresh_token": None,
+        "yt_token_expiry": None,
+        "last_manual_check": None,
+        "broadcast_privacy": "public",
+    }
+    return {**defaults, **overrides}
+
+
 @pytest.mark.asyncio
 async def test_status_youtube_connected():
     update = make_update()
     context = make_context([])
-    group = {"yt_channel_id": "UC123abc"}
+    group = make_group(yt_channel_id="UC123abc")
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),
@@ -51,7 +68,7 @@ async def test_status_youtube_connected():
 async def test_status_youtube_not_connected():
     update = make_update()
     context = make_context([])
-    group = {"yt_channel_id": None}
+    group = make_group()
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),
@@ -121,7 +138,7 @@ async def test_status_db_error():
 async def test_status_extra_args_ignored():
     update = make_update()
     context = make_context(["extra", "args"])
-    group = {"yt_channel_id": "UC456"}
+    group = make_group(yt_channel_id="UC456")
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),
@@ -139,7 +156,7 @@ async def test_status_extra_args_ignored():
 async def test_status_args_none():
     update = make_update()
     context = make_context(None)
-    group = {"yt_channel_id": None}
+    group = make_group()
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),

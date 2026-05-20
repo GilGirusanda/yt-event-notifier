@@ -96,7 +96,7 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/listslots`                                       | List all configured slots with their IDs and settings                                                                  |
 | `/streams`                                         | List upcoming tracked streams with scheduled times and YouTube links                                                   |
 | `/status`                                          | Show bot health, YouTube connection status, and next scheduled poll time                                               |
-| `/check`                                           | Trigger an immediate poll for this group (admin only; rate-limited to once per 5 minutes per group)                    |
+| `/check`                                           | Trigger an immediate poll for this group (admin only)                    |
 | `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                                        |
 | `/setbroadcastdescription <text>`                  | Set the default description for auto-created YouTube broadcasts (default: empty)                                       |
 

@@ -536,14 +536,14 @@ async def cmd_streams(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text("No upcoming streams to display.")
         return
 
-    group_tz = ZoneInfo(group["timezone"]) if group and group.get("timezone") else ZoneInfo("UTC")
+    group_tz = ZoneInfo(group["timezone"]) if group else ZoneInfo("UTC")
 
     lines = ["📡 *Tracked Streams*"]
     for stream in streams:
         sched_dt = datetime.fromtimestamp(
             stream["scheduled_start"], tz=group_tz
         ).strftime("%Y-%m-%d %H:%M %Z")
-        status = stream.get("status", "scheduled")
+        status = stream["status"]
         lines.append(f"• [{status}] Scheduled: `{sched_dt}` | URL: {stream['yt_url']}")
 
     await update.message.reply_text(
@@ -573,8 +573,8 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
-    timezone = group.get("timezone", "N/A")
-    auto_create = "Enabled ✅" if group.get("auto_create") else "Disabled ❌"
+    timezone = group["timezone"]
+    auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
     yt_status = (
         f"Connected (channel: {group['yt_channel_id']}) 🟢"
         if group["yt_channel_id"]
