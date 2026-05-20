@@ -33,7 +33,7 @@ async def update_group(group_id: int, **fields: Any) -> None:
     await conn.commit()
 
 
-async def add_slot(group_id: int, day_of_week: int, local_time: str, title_template: str) -> int:
+async def add_slot(group_id: int, day_of_week: int, local_time: str, title_template: str = "") -> int:
     conn = get_connection()
     cursor = await conn.execute(
         "INSERT INTO slots (group_id, day_of_week, local_time, title_template) VALUES (?, ?, ?, ?)",
@@ -63,12 +63,12 @@ async def remove_slot(slot_id: int, group_id: int) -> None:
     await conn.commit()
 
 
-async def update_slot(slot_id: int, **fields: Any) -> None:
+async def update_slot(slot_id: int, group_id: int, **fields: Any) -> None:
     conn = get_connection()
     set_clause = ", ".join(f"{k} = ?" for k in fields)
     await conn.execute(
-        f"UPDATE slots SET {set_clause} WHERE slot_id = ?",
-        (*fields.values(), slot_id),
+        f"UPDATE slots SET {set_clause} WHERE slot_id = ? AND group_id = ?",
+        (*fields.values(), slot_id, group_id),
     )
     await conn.commit()
 

@@ -5,6 +5,26 @@ Severity: **Critical** | **Warning** | **Suggestion**
 
 ---
 
+## [Critical] `/check` polls all groups instead of the invoking group
+
+**File:** `src/bot/commands.py` — `cmd_check`
+
+`cmd_check` calls `run_polling_cycle(context.bot)` with no group filter. This is the same global engine used by the EventBridge scheduler — it iterates over every registered group. An admin in group A therefore triggers YouTube API calls and potentially sends notifications for groups B, C, D.
+
+**Suggested fix:** Add a `group_id` parameter to `run_polling_cycle` (or introduce a separate `run_polling_cycle_for_group`) and pass `update.effective_chat.id` from `cmd_check`.
+
+---
+
+## [Critical] `/status` next poll time is fabricated, not derived from the scheduler
+
+**File:** `src/bot/commands.py` — `cmd_status`
+
+The "next scheduled poll" value is computed as `15 - (now.minute % 15)`, a pure arithmetic guess that assumes a fixed 15-minute cron boundary and has no connection to the actual EventBridge schedule. If the poll interval changes, or if the adaptive 5-minute rule fires first, the displayed value will be silently wrong.
+
+**Suggested fix:** Either remove the next-poll line until real scheduler state is available (e.g. stored as a `last_polled` timestamp in the DB), or derive it from a known `POLL_INTERVAL_MINUTES` constant so at least the assumption is explicit and single-sourced.
+
+---
+
 ## [Warning] Unparameterised column names in `update_group` and `update_slot`
 
 **File:** `src/db/queries.py:26–33`, `src/db/queries.py:67–73`
@@ -31,6 +51,26 @@ Values are parameterised (safe), but column names are not. If a caller ever pass
 
 ---
 
+## [Suggestion] `/help` omits "next scheduled poll time" from `/status` description
+
+**File:** `src/bot/commands.py` — `cmd_help`
+
+The `/help` entry for `/status` reads "Show bot health and YouTube connection status" but omits the next scheduled poll time, which the command also displays. Once the poll-time display is corrected (see Critical item above), the help text will remain stale.
+
+**Suggested fix:** Update the `/status` line in `cmd_help` to "Show bot health, YouTube connection status, and next scheduled poll time (admin)" once the underlying poll-time logic is fixed.
+
+---
+
+## [Suggestion] `/disconnectyoutube` may leave `yt_channel_name` stale after disconnect
+
+**File:** `src/bot/commands.py` — `cmd_disconnect_youtube`
+
+`cmd_disconnect_youtube` clears `yt_channel_id`, `yt_access_token`, `yt_refresh_token`, and `yt_token_expiry`, but does not clear `yt_channel_name`. If a `yt_channel_name` column is added (see "raw channel ID" item below), a reconnect to a different channel would leave the stale name visible in `/status` until the new OAuth flow overwrites it.
+
+**Suggested fix:** Include `yt_channel_name=None` in the `update_group` call inside `cmd_disconnect_youtube` whenever that column is added.
+
+---
+
 ## [Suggestion] Inconsistent reply style across bot commands
 
 **File:** `src/bot/commands.py`
@@ -38,6 +78,18 @@ Values are parameterised (safe), but column names are not. If a caller ever pass
 `cmd_set_timezone` uses `✅` / `❌` prefixes on success and error replies. `cmd_set_autocreate` and `cmd_add_slot` do not. This produces an inconsistent UX where some commands feel polished and others do not.
 
 **Suggested fix:** Agree on a single reply style (with or without emoji) and apply it uniformly across all command handlers. Consider centralising message templates in `src/bot/messages.py`.
+
+---
+
+## [Suggestion] `/status` displays raw channel ID instead of channel name
+
+**File:** `src/bot/commands.py` — `cmd_status`
+
+The YouTube connection line in `/status` shows the `yt_channel_id` value (e.g. `UCxxxxxxx`) rather than a human-readable channel name. This is inconsistent with the `{channel}` title template variable, which resolves to the connected channel's display name per the PRD.
+
+The schema has no `yt_channel_name` column; fixing this requires adding the column, fetching the name from the YouTube Data API during the OAuth callback, and storing it alongside the tokens.
+
+**Suggested fix:** Add `yt_channel_name TEXT` to the `groups` table, populate it in `handle_oauth_callback` via a `channels.list` API call, and update `cmd_status` to display it.
 
 ---
 
