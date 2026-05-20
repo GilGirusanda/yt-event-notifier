@@ -312,9 +312,11 @@ After adding the bot to a Telegram group, an admin runs the following sequence t
 | `/settemplate <slot_id> <template>` | Set the YouTube broadcast title template for a slot. Supports `{date}` and `{channel}`            | Admin  |
 | `/setmessage <slot_id> <message>`   | Set the Telegram message sent as a reminder or live alert for a slot                              | Admin  |
 | `/listslots`                        | List all configured slots with their IDs, times, and templates                                    | Admin  |
-| `/streams`                          | List upcoming and active streams the bot is tracking for this group                               | Admin  |
-| `/status`                           | Show connection status, timezone, and current settings for this group                             | Admin  |
-| `/check`                            | Manually trigger a stream check for this group. Rate-limited                                      | Admin  |
+| `/streams`                                             | List upcoming and active streams the bot is tracking for this group                               | All    |
+| `/status`                                              | Show connection status, timezone, and current settings for this group                             | Admin  |
+| `/check`                                               | Manually trigger a stream check for this group. Rate-limited to once per 5 minutes               | Admin  |
+| `/setbroadcastprivacy <public\|unlisted\|private>`     | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                   | Admin  |
+| `/setbroadcastdescription <text>`                      | Set the default description for auto-created YouTube broadcasts (default: empty)                  | Admin  |
 
 ---
 

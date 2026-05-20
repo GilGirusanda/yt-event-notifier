@@ -96,7 +96,7 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/listslots`                                       | List all configured slots with their IDs and settings                                                                  |
 | `/streams`                                         | List upcoming tracked streams with scheduled times and YouTube links                                                   |
 | `/status`                                          | Show bot health, YouTube connection status, and next scheduled poll time                                               |
-| `/check`                                           | Trigger an immediate poll for this group (admin only)                    |
+| `/check`                                           | Trigger an immediate poll for this group (admin only)                                                                  |
 | `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                                        |
 | `/setbroadcastdescription <text>`                  | Set the default description for auto-created YouTube broadcasts (default: empty)                                       |
 
@@ -143,18 +143,20 @@ One Lambda function handles three event sources, distinguished by event shape:
 
 **`groups`** — one row per registered Telegram group or channel
 
-| Column               | Type       | Description                                                                                                                                                                          |
-| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `group_id`           | INTEGER PK | Telegram chat ID                                                                                                                                                                     |
-| `timezone`           | TEXT       | IANA timezone string (e.g. `Europe/London`). Validated against the `zoneinfo` database at `/settimezone` time; the bot guides admins with an example prompt if the value is invalid. |
-| `reminder_hours`     | REAL       | Hours before stream start to send reminder (default: 1)                                                                                                                              |
-| `check_window_hours` | REAL       | Hours before slot to check/create stream (default: 24)                                                                                                                               |
-| `auto_create`        | BOOLEAN    | Auto-create streams on YouTube (default: false)                                                                                                                                      |
-| `yt_channel_id`      | TEXT       | Connected YouTube channel ID (nullable)                                                                                                                                              |
-| `yt_access_token`    | TEXT       | OAuth access token (nullable)                                                                                                                                                        |
-| `yt_refresh_token`   | TEXT       | OAuth refresh token (nullable)                                                                                                                                                       |
-| `yt_token_expiry`    | INTEGER    | Unix timestamp of access token expiry (nullable)                                                                                                                                     |
-| `last_manual_check`  | INTEGER    | Unix timestamp of last `/check` invocation (for rate-limiting)                                                                                                                       |
+| Column                  | Type       | Description                                                                                                                                                                          |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `group_id`              | INTEGER PK | Telegram chat ID                                                                                                                                                                     |
+| `timezone`              | TEXT       | IANA timezone string (e.g. `Europe/London`). Validated against the `zoneinfo` database at `/settimezone` time; the bot guides admins with an example prompt if the value is invalid. |
+| `reminder_hours`        | REAL       | Hours before stream start to send reminder (default: 1)                                                                                                                              |
+| `check_window_hours`    | REAL       | Hours before slot to check/create stream (default: 24)                                                                                                                               |
+| `auto_create`           | BOOLEAN    | Auto-create streams on YouTube (default: false)                                                                                                                                      |
+| `yt_channel_id`         | TEXT       | Connected YouTube channel ID (nullable)                                                                                                                                              |
+| `yt_access_token`       | TEXT       | OAuth access token (nullable)                                                                                                                                                        |
+| `yt_refresh_token`      | TEXT       | OAuth refresh token (nullable)                                                                                                                                                       |
+| `yt_token_expiry`       | INTEGER    | Unix timestamp of access token expiry (nullable)                                                                                                                                     |
+| `last_manual_check`     | INTEGER    | Unix timestamp of last `/check` invocation (for rate-limiting)                                                                                                                       |
+| `broadcast_privacy`     | TEXT       | Default privacy for auto-created broadcasts (`public` / `unlisted` / `private`, default: `public`)                                                                                   |
+| `broadcast_description` | TEXT       | Default description for auto-created YouTube broadcasts (default: empty)                                                                                                             |
 
 **`slots`** — weekly schedule slots per group
 
