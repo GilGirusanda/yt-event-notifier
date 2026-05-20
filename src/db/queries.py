@@ -33,7 +33,7 @@ async def update_group(group_id: int, **fields: Any) -> None:
     await conn.commit()
 
 
-async def add_slot(group_id: int, day_of_week: int, local_time: str, title_template: str) -> int:
+async def add_slot(group_id: int, day_of_week: int, local_time: str, title_template: str = "") -> int:
     conn = get_connection()
     cursor = await conn.execute(
         "INSERT INTO slots (group_id, day_of_week, local_time, title_template) VALUES (?, ?, ?, ?)",

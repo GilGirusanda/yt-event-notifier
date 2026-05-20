@@ -304,15 +304,15 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     args = context.args
-    if not args or len(args) < 3:
+    if not args or len(args) < 2:
         await update.message.reply_text(
-            "Usage: /addslot <day> <HH:MM> <Title...>\nExample: /addslot monday 20:00 Weekly Stream"
+            "Usage: /addslot <day> <HH:MM> [title_template]\nExample: /addslot monday 20:00 Weekly Stream"
         )
         return
 
     day_str = args[0]
     time_str = args[1]
-    title_template = " ".join(args[2:])
+    title_template = " ".join(args[2:]) if len(args) > 2 else ""
     days = [
         "monday",
         "tuesday",
@@ -356,8 +356,9 @@ async def cmd_add_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
 
         logger.info("Added slot %s for chat %s", slot_id, chat_id)
+        title_part = f" with title: '{title_template}'" if title_template else ""
         await update.message.reply_text(
-            f"Slot {slot_id} added successfully for {day_str.capitalize()} at {formatted_time} with title: '{title_template}'."
+            f"Slot {slot_id} added successfully for {day_str.capitalize()} at {formatted_time}{title_part}."
         )
     except Exception as e:
         logger.exception("Failed to add slot to DB")
