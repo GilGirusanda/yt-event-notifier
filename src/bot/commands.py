@@ -401,7 +401,7 @@ async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not args or len(args) < 2:
         await update.message.reply_text(
             "Usage: /settemplate <slot_id> <template>\n"
-            "Example: /settemplate 1 Weekly Stream {{date}}"
+            "Example: /settemplate 1 Weekly Stream {date}"
         )
         return
 
@@ -410,7 +410,7 @@ async def cmd_set_template(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except (ValueError, TypeError):
         await update.message.reply_text(
             "Usage: /settemplate <slot_id> <template>\n"
-            "Example: /settemplate 1 Weekly Stream {{date}}"
+            "Example: /settemplate 1 Weekly Stream {date}"
         )
         return
 

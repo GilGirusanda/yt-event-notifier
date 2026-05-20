@@ -64,7 +64,7 @@ async def test_set_template_single_word_template():
 @pytest.mark.asyncio
 async def test_set_template_with_template_variables():
     update = make_update()
-    context = make_context(["3", "Stream", "{{date}}", "on", "{{channel}}"])
+    context = make_context(["3", "Stream", "{date}", "on", "{channel}"])
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),
@@ -73,7 +73,7 @@ async def test_set_template_with_template_variables():
     ):
         await cmd_set_template(update, context)
 
-    mock_update_slot.assert_awaited_once_with(3, title_template="Stream {{date}} on {{channel}}")
+    mock_update_slot.assert_awaited_once_with(3, 123456, title_template="Stream {date} on {channel}")
     reply_text = update.message.reply_text.call_args[0][0]
     assert "3" in reply_text
 
