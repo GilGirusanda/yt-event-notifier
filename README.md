@@ -317,6 +317,7 @@ After adding the bot to a Telegram group, an admin runs the following sequence t
 | `/check`                                               | Manually trigger a stream check for this group. Rate-limited to once per 5 minutes               | Admin  |
 | `/setbroadcastprivacy <public\|unlisted\|private>`     | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                   | Admin  |
 | `/setbroadcastdescription <text>`                      | Set the default description for auto-created YouTube broadcasts (default: empty)                  | Admin  |
+| `/setbroadcastmadeforkids <yes\|no>`                   | Set whether auto-created broadcasts are marked as made for kids (default: `no`)                   | Admin  |
 
 ---
 

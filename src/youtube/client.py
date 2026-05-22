@@ -51,6 +51,7 @@ class YouTubeClient:
         scheduled_start_iso: str,
         description: str = "",
         privacy: str = "public",
+        made_for_kids: bool = False,
     ) -> dict[str, Any]:
         return (
             self._service.liveBroadcasts()
@@ -64,7 +65,7 @@ class YouTubeClient:
                     },
                     "status": {
                         "privacyStatus": privacy,
-                        "selfDeclaredMadeForKids": False,
+                        "selfDeclaredMadeForKids": made_for_kids,
                     },
                 },
             )

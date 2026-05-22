@@ -40,6 +40,7 @@ def make_group(**overrides) -> dict:
         "last_manual_check": None,
         "broadcast_privacy": "public",
         "broadcast_description": "",
+        "broadcast_made_for_kids": 0,
     }
     return {**defaults, **overrides}
 
