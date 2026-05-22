@@ -106,6 +106,7 @@ async def _process_group(bot: Bot, group: sqlite3.Row) -> None:
                         iso_start,
                         description=group["broadcast_description"],
                         privacy=group["broadcast_privacy"],
+                        made_for_kids=bool(group["broadcast_made_for_kids"]),
                     )
                     b_id = broadcast_resp["id"]
                     url = f"https://youtube.com/live/{b_id}"

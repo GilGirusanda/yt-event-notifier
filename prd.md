@@ -59,7 +59,7 @@
 - Each group connects **one YouTube channel** via a bot-guided **OAuth 2.0 flow**: the bot sends a Google sign-in link via Telegram; the admin authorises it in a browser; tokens are stored in the database.
 - The bot uses the **YouTube Live Streaming API**: `liveBroadcasts.list`, `liveBroadcasts.insert`, `liveStreams.insert`, `liveBroadcasts.bind`.
 - A configurable **stream check window** (default: 24 hours before a slot) determines how far in advance the bot looks for or creates the stream on YouTube.
-- **Auto-create** (per-group toggle, default: off): if enabled and no broadcast exists for an upcoming slot, the bot creates it on YouTube using the slot's title template. Auto-created broadcasts use per-group configurable settings: **privacy** (public / unlisted / private, default: `public`) and **description** (plain text, default: empty). See `/setbroadcastprivacy` and `/setbroadcastdescription` in §5.4.
+- **Auto-create** (per-group toggle, default: off): if enabled and no broadcast exists for an upcoming slot, the bot creates it on YouTube using the slot's title template. Auto-created broadcasts use per-group configurable settings: **privacy** (public / unlisted / private, default: `public`), **description** (plain text, default: empty), and **made for kids** (yes / no, default: `no`). See `/setbroadcastprivacy`, `/setbroadcastdescription`, and `/setbroadcastmadeforkids` in §5.4.
 - If auto-create is off and no stream is found within the check window, the group's admins are alerted via DM and nothing is sent to the group.
 - OAuth access tokens are refreshed automatically before each API call. If refresh fails, group admins are alerted.
 
@@ -99,6 +99,7 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/check`                                           | Trigger an immediate poll for this group (admin only)                                                                  |
 | `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                                        |
 | `/setbroadcastdescription <text>`                  | Set the default description for auto-created YouTube broadcasts (default: empty)                                       |
+| `/setbroadcastmadeforkids <yes\|no>`               | Set whether auto-created broadcasts are marked as made for kids (default: `no`)                                        |
 
 ### 5.5 Admin Error Alerts
 
@@ -155,8 +156,9 @@ One Lambda function handles three event sources, distinguished by event shape:
 | `yt_refresh_token`      | TEXT       | OAuth refresh token (nullable)                                                                                                                                                       |
 | `yt_token_expiry`       | INTEGER    | Unix timestamp of access token expiry (nullable)                                                                                                                                     |
 | `last_manual_check`     | INTEGER    | Unix timestamp of last `/check` invocation (for rate-limiting)                                                                                                                       |
-| `broadcast_privacy`     | TEXT       | Default privacy for auto-created broadcasts (`public` / `unlisted` / `private`, default: `public`)                                                                                   |
-| `broadcast_description` | TEXT       | Default description for auto-created YouTube broadcasts (default: empty)                                                                                                             |
+| `broadcast_privacy`         | TEXT       | Default privacy for auto-created broadcasts (`public` / `unlisted` / `private`, default: `public`)                                                                               |
+| `broadcast_description`     | TEXT       | Default description for auto-created YouTube broadcasts (default: empty)                                                                                                         |
+| `broadcast_made_for_kids`   | BOOLEAN    | Whether auto-created broadcasts are marked as made for kids (default: false)                                                                                                     |
 
 **`slots`** — weekly schedule slots per group
 

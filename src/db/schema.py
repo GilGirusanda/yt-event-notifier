@@ -12,8 +12,9 @@ CREATE TABLE IF NOT EXISTS groups (
     yt_refresh_token    TEXT,
     yt_token_expiry     INTEGER,
     last_manual_check   INTEGER,
-    broadcast_privacy   TEXT    NOT NULL DEFAULT 'public',
-    broadcast_description   TEXT    NOT NULL DEFAULT ''
+    broadcast_privacy       TEXT    NOT NULL DEFAULT 'public',
+    broadcast_description   TEXT    NOT NULL DEFAULT '',
+    broadcast_made_for_kids BOOLEAN NOT NULL DEFAULT 0
 )
 """
 
@@ -47,4 +48,12 @@ async def init_schema(conn: aiosqlite.Connection) -> None:
     await conn.execute(_CREATE_GROUPS)
     await conn.execute(_CREATE_SLOTS)
     await conn.execute(_CREATE_STREAMS)
+    # Migrations for existing databases
+    for sql in [
+        "ALTER TABLE groups ADD COLUMN broadcast_made_for_kids BOOLEAN NOT NULL DEFAULT 0",
+    ]:
+        try:
+            await conn.execute(sql)
+        except Exception:
+            pass  # Column already exists
     await conn.commit()
