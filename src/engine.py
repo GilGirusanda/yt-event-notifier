@@ -101,7 +101,12 @@ async def _process_group(bot: Bot, group: sqlite3.Row) -> None:
                     await upsert_stream(b_id, chat_id, slot["slot_id"], target_ts, url)
                 else:
                     title = slot["title_template"].replace("{date}", next_dt_utc.strftime("%Y-%m-%d"))
-                    broadcast_resp = yt.create_broadcast(title, iso_start)
+                    broadcast_resp = yt.create_broadcast(
+                        title,
+                        iso_start,
+                        description=group["broadcast_description"],
+                        privacy=group["broadcast_privacy"],
+                    )
                     b_id = broadcast_resp["id"]
                     url = f"https://youtube.com/live/{b_id}"
                     

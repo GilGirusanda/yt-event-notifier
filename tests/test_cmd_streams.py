@@ -39,6 +39,7 @@ def make_group(timezone="UTC"):
         "yt_token_expiry": None,
         "last_manual_check": None,
         "broadcast_privacy": "public",
+        "broadcast_description": "",
     }
 
 

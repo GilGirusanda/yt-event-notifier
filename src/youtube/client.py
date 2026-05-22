@@ -11,7 +11,7 @@ class YouTubeClient:
     def __init__(self, credentials: Credentials) -> None:
         # We MUST type this as `Any`. `googleapiclient` creates methods like
         # `liveBroadcasts()` dynamically at runtime based on Google's JSON discovery docs.
-        # The base `Resource` class does NOT actually contain these methods, so 
+        # The base `Resource` class does NOT actually contain these methods, so
         # statically typing it as `Resource` guarantees a type-checker error.
         self._service: Any = build("youtube", "v3", credentials=credentials)
 
@@ -23,11 +23,11 @@ class YouTubeClient:
 
         Args:
             scheduled_start_iso: Scheduled start time in ISO 8601 format.
-            broadcastStatus: Status of the broadcast. Can be 'all', 'active', 'upcoming', 
+            broadcastStatus: Status of the broadcast. Can be 'all', 'active', 'upcoming',
                 'live', 'completed', 'none'. Defaults to 'all'.
 
         Returns:
-            dict[str, Any] | None: Dictionary containing broadcast information if found, 
+            dict[str, Any] | None: Dictionary containing broadcast information if found,
                 None otherwise.
         """
         response = (
@@ -46,7 +46,11 @@ class YouTubeClient:
         return None
 
     def create_broadcast(
-        self, title: str, scheduled_start_iso: str, description: str = ""
+        self,
+        title: str,
+        scheduled_start_iso: str,
+        description: str = "",
+        privacy: str = "public",
     ) -> dict[str, Any]:
         return (
             self._service.liveBroadcasts()
@@ -58,7 +62,10 @@ class YouTubeClient:
                         "scheduledStartTime": scheduled_start_iso,
                         "description": description,
                     },
-                    "status": {"privacyStatus": "public"},
+                    "status": {
+                        "privacyStatus": privacy,
+                        "selfDeclaredMadeForKids": False,
+                    },
                 },
             )
             .execute()

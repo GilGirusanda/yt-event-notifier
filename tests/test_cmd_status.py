@@ -39,6 +39,7 @@ def make_group(**overrides) -> dict:
         "yt_token_expiry": None,
         "last_manual_check": None,
         "broadcast_privacy": "public",
+        "broadcast_description": "",
     }
     return {**defaults, **overrides}
 
