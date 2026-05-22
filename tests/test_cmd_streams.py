@@ -40,6 +40,7 @@ def make_group(timezone="UTC"):
         "last_manual_check": None,
         "broadcast_privacy": "public",
         "broadcast_description": "",
+        "broadcast_made_for_kids": 0,
     }
 
 

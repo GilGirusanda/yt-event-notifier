@@ -41,7 +41,12 @@ def build_application(token: str) -> Application:
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("check", cmd_check))
     app.add_handler(CommandHandler("setbroadcastprivacy", cmd_setbroadcastprivacy))
-    app.add_handler(CommandHandler("setbroadcastdescription", cmd_setbroadcastdescription))
+    app.add_handler(
+        CommandHandler("setbroadcastdescription", cmd_setbroadcastdescription)
+    )
+    app.add_handler(
+        CommandHandler("setbroadcastmadeforkids", cmd_setbroadcastmadeforkids)
+    )
     return app
 
 
@@ -96,7 +101,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/status — Show bot health and YouTube connection status (admin)\n"
         "/check — Trigger an immediate poll (admin)\n"
         "/setbroadcastprivacy <public|unlisted|private> — Set auto-created broadcast privacy (admin)\n"
-        "/setbroadcastdescription <text> — Set auto-created broadcast description (admin)"
+        "/setbroadcastdescription <text> — Set auto-created broadcast description (admin)\n"
+        "/setbroadcastmadeforkids <yes|no> — Set whether auto-created broadcasts are made for kids (admin)"
     )
 
 
@@ -603,7 +609,9 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("🔄 Running manual sync with YouTube...")
     try:
         await run_polling_cycle(context.bot)
-        await update.message.reply_text("✅ Sync complete! Use /streams to see tracked broadcasts.")
+        await update.message.reply_text(
+            "✅ Sync complete! Use /streams to see tracked broadcasts."
+        )
     except Exception as e:
         logger.exception("Manual check failed")
         await update.message.reply_text(f"❌ Error during sync: {e}")
@@ -634,11 +642,48 @@ async def cmd_setbroadcastdescription(
             await update_group(chat_id, broadcast_description=description)
 
         logger.info("Set broadcast_description for chat %s", chat_id)
-        await update.message.reply_text(f"Broadcast description set to: '{description}'.")
+        await update.message.reply_text(
+            f"Broadcast description set to: '{description}'."
+        )
     except Exception:
         logger.exception("Failed to set broadcast_description")
         await update.message.reply_text(
             "Error setting broadcast description. Please try again."
+        )
+
+
+async def cmd_setbroadcastmadeforkids(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    assert update.message and update.effective_chat
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    valid_values = ("yes", "no")
+    args = context.args
+    if not args or len(args) != 1 or args[0].lower() not in valid_values:
+        await update.message.reply_text(
+            "Usage: /setbroadcastmadeforkids <yes|no>\n"
+            "Example: /setbroadcastmadeforkids no"
+        )
+        return
+
+    value = args[0].lower() == "yes"
+    chat_id = update.effective_chat.id
+
+    try:
+        async with db_context():
+            await upsert_group(chat_id)
+            await update_group(chat_id, broadcast_made_for_kids=value)
+
+        label = "yes" if value else "no"
+        logger.info("Set broadcast_made_for_kids to %s for chat %s", label, chat_id)
+        await update.message.reply_text(f"Broadcast made for kids set to {label}.")
+    except Exception:
+        logger.exception("Failed to set broadcast_made_for_kids")
+        await update.message.reply_text(
+            "Error setting broadcast made for kids. Please try again."
         )
 
 
