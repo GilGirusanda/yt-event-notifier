@@ -602,7 +602,7 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("🔄 Running manual sync with YouTube...")
     try:
-        await run_polling_cycle(context.bot)
+        await run_polling_cycle(context.bot, group_id=update.effective_chat.id)
         await update.message.reply_text("✅ Sync complete! Use /streams to see tracked broadcasts.")
     except Exception as e:
         logger.exception("Manual check failed")

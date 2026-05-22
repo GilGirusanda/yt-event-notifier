@@ -113,11 +113,13 @@ async def _process_group(bot: Bot, group: sqlite3.Row) -> None:
                     await bot.send_message(chat_id, f"✅ Auto-created upcoming stream for '{title}':\n{url}")
 
 
-async def run_polling_cycle(bot: Bot) -> None:
+async def run_polling_cycle(bot: Bot, group_id: int | None = None) -> None:
     logger.info("Starting polling cycle")
     async with db_context():
         groups = await list_groups()
         for group in groups:
+            if group_id is not None and group["group_id"] != group_id:
+                continue
             if not group["yt_access_token"]:
                 continue
                 
