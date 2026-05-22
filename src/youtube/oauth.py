@@ -64,13 +64,15 @@ async def handle_oauth_callback(code: str, state: str) -> int:
     creds = flow.credentials
 
     channel_id: str | None = None
+    channel_name: str | None = None
     try:
         from googleapiclient.discovery import build as yt_build
         service = yt_build("youtube", "v3", credentials=creds)
-        resp = service.channels().list(part="id", mine=True, maxResults=1).execute()
+        resp = service.channels().list(part="id,snippet", mine=True, maxResults=1).execute()
         items = resp.get("items", [])
         if items:
             channel_id = items[0]["id"]
+            channel_name = items[0].get("snippet", {}).get("title")
     except Exception:
         logger.exception("Failed to fetch YouTube channel ID for group %d", group_id)
 
@@ -80,6 +82,7 @@ async def handle_oauth_callback(code: str, state: str) -> int:
         yt_refresh_token=creds.refresh_token,
         yt_token_expiry=int(creds.expiry.timestamp()) if creds.expiry else None,
         yt_channel_id=channel_id,
+        yt_channel_name=channel_name,
     )
     logger.info("OAuth tokens stored for group %d (channel: %s)", group_id, channel_id)
     return group_id

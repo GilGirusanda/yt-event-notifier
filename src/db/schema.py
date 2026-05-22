@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS groups (
     check_window_hours  REAL    NOT NULL DEFAULT 24.0,
     auto_create         BOOLEAN NOT NULL DEFAULT 0,
     yt_channel_id       TEXT,
+    yt_channel_name     TEXT,
     yt_access_token     TEXT,
     yt_refresh_token    TEXT,
     yt_token_expiry     INTEGER,

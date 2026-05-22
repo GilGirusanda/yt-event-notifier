@@ -95,7 +95,7 @@ Configuration commands require Telegram admin rights. `/start`, `/streams`, and 
 | `/setmessage <slot_id> <message>`                  | Set the custom notification message for a slot                                                                         |
 | `/listslots`                                       | List all configured slots with their IDs and settings                                                                  |
 | `/streams`                                         | List upcoming tracked streams with scheduled times and YouTube links                                                   |
-| `/status`                                          | Show bot health, YouTube connection status, and next scheduled poll time                                               |
+| `/status`                                          | Show bot health, YouTube connection status (including channel name), and next scheduled poll time                      |
 | `/check`                                           | Trigger an immediate poll for this group (admin only)                                                                  |
 | `/setbroadcastprivacy <public\|unlisted\|private>` | Set the default privacy for auto-created YouTube broadcasts (default: `public`)                                        |
 | `/setbroadcastdescription <text>`                  | Set the default description for auto-created YouTube broadcasts (default: empty)                                       |
@@ -152,6 +152,7 @@ One Lambda function handles three event sources, distinguished by event shape:
 | `check_window_hours`    | REAL       | Hours before slot to check/create stream (default: 24)                                                                                                                               |
 | `auto_create`           | BOOLEAN    | Auto-create streams on YouTube (default: false)                                                                                                                                      |
 | `yt_channel_id`         | TEXT       | Connected YouTube channel ID (nullable)                                                                                                                                              |
+| `yt_channel_name`       | TEXT       | Human-readable display name of the connected YouTube channel (nullable)                                                                                                              |
 | `yt_access_token`       | TEXT       | OAuth access token (nullable)                                                                                                                                                        |
 | `yt_refresh_token`      | TEXT       | OAuth refresh token (nullable)                                                                                                                                                       |
 | `yt_token_expiry`       | INTEGER    | Unix timestamp of access token expiry (nullable)                                                                                                                                     |

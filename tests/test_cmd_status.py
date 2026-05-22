@@ -34,6 +34,7 @@ def make_group(**overrides) -> dict:
         "check_window_hours": 24.0,
         "auto_create": 0,
         "yt_channel_id": None,
+        "yt_channel_name": None,
         "yt_access_token": None,
         "yt_refresh_token": None,
         "yt_token_expiry": None,
@@ -49,7 +50,7 @@ def make_group(**overrides) -> dict:
 async def test_status_youtube_connected():
     update = make_update()
     context = make_context([])
-    group = make_group(yt_channel_id="UC123abc")
+    group = make_group(yt_channel_id="UC123abc", yt_channel_name="My YT Channel")
 
     with (
         patch("src.bot.commands._require_admin", new=AsyncMock(return_value=True)),
@@ -62,7 +63,7 @@ async def test_status_youtube_connected():
     reply_text = update.message.reply_text.call_args[0][0].lower()
     assert "ok" in reply_text
     assert "connected" in reply_text
-    assert "uc123abc" in reply_text
+    assert "my yt channel" in reply_text
     assert "minute" in reply_text
 
 

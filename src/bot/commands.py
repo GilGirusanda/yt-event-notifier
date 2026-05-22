@@ -581,7 +581,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     timezone = group["timezone"]
     auto_create = "Enabled ✅" if group["auto_create"] else "Disabled ❌"
     yt_status = (
-        f"Connected (channel: {group['yt_channel_id']}) 🟢"
+        f"Connected ({group['yt_channel_name']}) 🟢"
         if group["yt_channel_id"]
         else "Not connected 🔴"
     )
