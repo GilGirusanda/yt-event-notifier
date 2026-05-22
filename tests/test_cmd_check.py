@@ -31,7 +31,7 @@ async def test_check_success():
     ):
         await cmd_check(update, context)
 
-    mock_poll.assert_awaited_once_with(context.bot)
+    mock_poll.assert_awaited_once_with(context.bot, group_id=CHAT_ID)
     calls = [c[0][0].lower() for c in update.message.reply_text.call_args_list]
     assert any("sync" in t or "running" in t for t in calls)
     assert any("complete" in t or "streams" in t for t in calls)
@@ -63,7 +63,7 @@ async def test_check_polling_error():
     ):
         await cmd_check(update, context)
 
-    mock_poll.assert_awaited_once_with(context.bot)
+    mock_poll.assert_awaited_once_with(context.bot, group_id=CHAT_ID)
     reply = update.message.reply_text.call_args[0][0].lower()
     assert "error" in reply or "fail" in reply
 
@@ -79,7 +79,7 @@ async def test_check_with_extra_args():
     ):
         await cmd_check(update, context)
 
-    mock_poll.assert_awaited_once_with(context.bot)
+    mock_poll.assert_awaited_once_with(context.bot, group_id=CHAT_ID)
 
 
 @pytest.mark.asyncio
@@ -93,4 +93,4 @@ async def test_check_with_none_args():
     ):
         await cmd_check(update, context)
 
-    mock_poll.assert_awaited_once_with(context.bot)
+    mock_poll.assert_awaited_once_with(context.bot, group_id=CHAT_ID)
