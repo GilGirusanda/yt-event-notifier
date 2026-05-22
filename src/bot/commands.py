@@ -16,7 +16,7 @@ from src.db.queries import (
     update_slot,
     list_active_streams,
 )
-from src.youtube.auth import create_oauth_flow
+from src.youtube.oauth import build_auth_url
 from src.engine import run_polling_cycle
 
 logger = logging.getLogger(__name__)
@@ -110,9 +110,7 @@ async def cmd_connect_youtube(
 
     chat_id = update.effective_chat.id
     try:
-        flow = create_oauth_flow(chat_id)
-        auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
-
+        auth_url = build_auth_url(chat_id)
         await update.message.reply_text(
             f"Please click the link below to authorize this bot to manage your YouTube broadcasts:\n\n{auth_url}"
         )

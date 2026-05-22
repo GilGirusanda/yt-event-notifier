@@ -40,9 +40,13 @@ async def _handle_webhook(body: str) -> dict[str, Any]:
 async def _handle_oauth_callback(query_params: dict[str, str]) -> dict[str, Any]:
     code = query_params.get("code", "")
     state = query_params.get("state", "")
-    async with db_context():
-        await handle_oauth_callback(code, state)
-    return {"statusCode": 200, "body": "Authorization successful. You may close this tab."}
+    try:
+        async with db_context():
+            await handle_oauth_callback(code, state)
+        return {"statusCode": 200, "body": "YouTube connected successfully! You may close this tab."}
+    except Exception:
+        logger.exception("Failed to complete OAuth callback")
+        return {"statusCode": 400, "body": "Failed to connect YouTube. The link may have expired — please run /connectyoutube again."}
 
 
 async def _handle_cron() -> None:

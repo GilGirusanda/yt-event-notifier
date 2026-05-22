@@ -43,7 +43,10 @@ def _verify_state(state: str) -> int:
 
 
 def build_auth_url(group_id: int) -> str:
-    flow = Flow.from_client_config(_client_config(), scopes=_SCOPES)
+    # autogenerate_code_verifier=False: PKCE requires storing the code_verifier
+    # across requests, which is incompatible with the stateless signed-state approach.
+    # Server-side web app flows don't require PKCE.
+    flow = Flow.from_client_config(_client_config(), scopes=_SCOPES, autogenerate_code_verifier=False)
     flow.redirect_uri = os.environ["GOOGLE_REDIRECT_URI"]
     url, _ = flow.authorization_url(
         access_type="offline",
@@ -59,13 +62,26 @@ async def handle_oauth_callback(code: str, state: str) -> int:
     flow.redirect_uri = os.environ["GOOGLE_REDIRECT_URI"]
     flow.fetch_token(code=code)
     creds = flow.credentials
+
+    channel_id: str | None = None
+    try:
+        from googleapiclient.discovery import build as yt_build
+        service = yt_build("youtube", "v3", credentials=creds)
+        resp = service.channels().list(part="id", mine=True, maxResults=1).execute()
+        items = resp.get("items", [])
+        if items:
+            channel_id = items[0]["id"]
+    except Exception:
+        logger.exception("Failed to fetch YouTube channel ID for group %d", group_id)
+
     await queries.update_group(
         group_id,
         yt_access_token=creds.token,
         yt_refresh_token=creds.refresh_token,
         yt_token_expiry=int(creds.expiry.timestamp()) if creds.expiry else None,
+        yt_channel_id=channel_id,
     )
-    logger.info("OAuth tokens stored for group %d", group_id)
+    logger.info("OAuth tokens stored for group %d (channel: %s)", group_id, channel_id)
     return group_id
 
 
@@ -86,6 +102,7 @@ async def get_credentials(group_id: int) -> Credentials:
         await queries.update_group(
             group_id,
             yt_access_token=creds.token,
+            yt_refresh_token=creds.refresh_token,
             yt_token_expiry=int(creds.expiry.timestamp()) if creds.expiry else None,
         )
     return creds
