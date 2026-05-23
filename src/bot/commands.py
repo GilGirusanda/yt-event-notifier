@@ -2,7 +2,9 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from telegram import Update
+import os
+
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.db.client import db_context
@@ -47,6 +49,7 @@ def build_application(token: str) -> Application:
     app.add_handler(
         CommandHandler("setbroadcastmadeforkids", cmd_setbroadcastmadeforkids)
     )
+    app.add_handler(CommandHandler("webapp", cmd_webapp))
     return app
 
 
@@ -100,6 +103,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/streams — List upcoming tracked streams\n"
         "/status — Show bot health and YouTube connection status (admin)\n"
         "/check — Trigger an immediate poll (admin)\n"
+        "/webapp — Open the configuration Web App (admin)\n"
         "/setbroadcastprivacy <public|unlisted|private> — Set auto-created broadcast privacy (admin)\n"
         "/setbroadcastdescription <text> — Set auto-created broadcast description (admin)\n"
         "/setbroadcastmadeforkids <yes|no> — Set whether auto-created broadcasts are made for kids (admin)"
@@ -719,3 +723,27 @@ async def cmd_setbroadcastprivacy(
         await update.message.reply_text(
             "Error setting broadcast privacy. Please try again."
         )
+
+
+async def cmd_webapp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message and update.effective_chat
+    if not await _require_admin(update, context):
+        await update.message.reply_text("Admin privileges required.")
+        return
+
+    chat_id = update.effective_chat.id
+    webapp_short_name = os.environ.get("WEBAPP_SHORT_NAME", "config")
+    
+    # Use a Direct Mini App link to bypass the group-chat restriction
+    # This requires the admin to create a Web App named `config` via BotFather
+    direct_link = f"https://t.me/{context.bot.username}/{webapp_short_name}?startapp={chat_id}"
+    
+    keyboard = [
+        [InlineKeyboardButton("Open Settings", url=direct_link)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "Click the button below to manage this group's settings:",
+        reply_markup=reply_markup,
+    )

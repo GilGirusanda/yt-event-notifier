@@ -10,6 +10,7 @@ from src.logging_config import setup_logging
 from src.bot.commands import build_application
 from src.db.client import db_context
 from src.youtube.oauth import handle_oauth_callback
+from src.ui.api import setup_routes
 
 
 async def oauth_callback(request: web.Request) -> web.Response:
@@ -66,6 +67,7 @@ async def async_main() -> None:
         web_app = web.Application()
         web_app["bot"] = app.bot
         web_app.router.add_get('/oauth/callback', oauth_callback)
+        setup_routes(web_app)
         
         runner = web.AppRunner(web_app)
         await runner.setup()

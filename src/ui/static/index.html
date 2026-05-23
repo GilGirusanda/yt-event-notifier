@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Group Configuration</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="header-content">
+                <h1>Group Settings</h1>
+                <p class="subtitle" id="groupName">Loading...</p>
+            </div>
+            <div class="status-indicator" id="statusIndicator"></div>
+        </header>
+
+        <main id="mainContent" style="display: none;">
+            
+            <section class="card glass" id="dashboardSection">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="margin-bottom: 0;">Dashboard</h2>
+                    <button type="button" id="btnSync" class="btn-sync">
+                        <span class="sync-icon">🔄</span> Sync Now
+                    </button>
+                </div>
+                
+                <h3 style="font-size: 14px; color: var(--hint-color); margin-bottom: 12px; font-weight: 500;">Upcoming Streams</h3>
+                <div id="streamsList" class="streams-list">
+                    <!-- Streams injected here -->
+                </div>
+            </section>
+            
+            <form id="settingsForm">
+                
+                <section class="card glass">
+                    <h2>General</h2>
+                    
+                    <div class="form-group">
+                        <label for="timezone">Timezone</label>
+                        <input type="text" id="timezone" name="timezone" placeholder="e.g. Europe/London" required>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <label for="auto_create">Auto Create Streams</label>
+                        <label class="switch">
+                            <input type="checkbox" id="auto_create" name="auto_create">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="card glass">
+                    <h2>Scheduling & Reminders</h2>
+                    
+                    <div class="form-group">
+                        <label for="reminder_hours">Reminder Window (Hours)</label>
+                        <input type="number" id="reminder_hours" name="reminder_hours" step="0.5" min="0.5" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="check_window_hours">Check Window (Hours)</label>
+                        <input type="number" id="check_window_hours" name="check_window_hours" step="1" min="1" required>
+                    </div>
+                </section>
+
+                <section class="card glass">
+                    <h2>YouTube Integration</h2>
+                    
+                    <div id="youtubeStatusContainer" class="youtube-status-container">
+                        <!-- Content injected via JS -->
+                    </div>
+                </section>
+
+                <section class="card glass">
+                    <h2>YouTube Defaults</h2>
+                    
+                    <div class="form-group">
+                        <label for="broadcast_privacy">Privacy Status</label>
+                        <select id="broadcast_privacy" name="broadcast_privacy">
+                            <option value="public">Public</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="broadcast_description">Default Description</label>
+                        <textarea id="broadcast_description" name="broadcast_description" rows="3" placeholder="Stream description..."></textarea>
+                    </div>
+
+                    <div class="form-group toggle-group">
+                        <label for="broadcast_made_for_kids">Made for Kids</label>
+                        <label class="switch">
+                            <input type="checkbox" id="broadcast_made_for_kids" name="broadcast_made_for_kids">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="card glass" id="slotsSection">
+                    <h2>Scheduled Slots</h2>
+                    
+                    <div id="slotsList" class="slots-list">
+                        <!-- Slots will be injected here via JS -->
+                    </div>
+                    
+                    <div class="add-slot-form">
+                        <h3>Add New Slot</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="slot_day">Day</label>
+                                <select id="slot_day">
+                                    <option value="0">Mon</option>
+                                    <option value="1">Tue</option>
+                                    <option value="2">Wed</option>
+                                    <option value="3">Thu</option>
+                                    <option value="4">Fri</option>
+                                    <option value="5">Sat</option>
+                                    <option value="6">Sun</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="slot_time">Time</label>
+                                <input type="time" id="slot_time" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="slot_title">Title Template (Optional)</label>
+                            <input type="text" id="slot_title" placeholder="Stream title...">
+                        </div>
+                        <div class="form-group">
+                            <label for="slot_message">Custom Message (Optional)</label>
+                            <input type="text" id="slot_message" placeholder="Custom reminder text...">
+                        </div>
+                        <button type="button" id="btnAddSlot" class="btn-secondary">Add Slot</button>
+                    </div>
+                </section>
+            </form>
+        </main>
+        
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <p>Fetching settings...</p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
